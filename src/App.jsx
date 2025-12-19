@@ -99,7 +99,7 @@ const TravelPlannerApp = () => {
     const int = setInterval(() => setLoadingProgress(p => Math.min(p + 10, 90)), 300);
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -159,7 +159,7 @@ const TravelPlannerApp = () => {
     });
 
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -222,7 +222,7 @@ const TravelPlannerApp = () => {
     try {
       // ステップ1: AIで基本スケジュールを生成
       setLoadingMessage('AIでスケジュールを作成中...');
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+      const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
