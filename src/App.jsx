@@ -115,7 +115,7 @@ const TravelPlannerApp = () => {
     }
   };
 
-  const recommendDestinations = async (p1, p2) => {
+  const recommendDestinations = async () => {
     setLoading(true);
     setStep('loading');
     setLoadingProgress(0);
@@ -124,37 +124,28 @@ const TravelPlannerApp = () => {
     const int = setInterval(() => setLoadingProgress(p => Math.min(p + 10, 90)), 300);
 
     try {
+      const membersInfo = travelGroup.members.map((member, idx) => ({
+        name: member.name,
+        ageGroup: member.ageGroup,
+        answers: memberAnswers[idx]
+      }));
+
+      const groupType = travelGroup.type === 'couple' ? '夫婦・カップル' : 
+                        travelGroup.type === 'family' ? '家族' : 
+                        travelGroup.type === 'friends' ? '友人グループ' : '一人旅';
+
+      const membersText = membersInfo.map((m, i) => `${m.name}（${m.ageGroup}）: ${JSON.stringify(m.answers)}`).join(', ');
+
+      const prompt = `以下の旅行グループに最適な日本国内の旅行先を3つ提案してください。グループ構成 - タイプ: ${groupType}, 人数: ${travelGroup.memberCount}名。各メンバーの回答: ${membersText}。全員が楽しめる場所を選び、具体的なスポット名を含めてください。JSON形式で返してください: {"destinations":[{"name":"地名","description":"200文字程度の説明","reason":"このグループに適している理由"}]}`;
+
       const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 3000,
+          max_tokens: 4000,
           temperature: 0.8,
-         messages: [{ role: 'user', content: `以下の旅行グループに最適な日本国内の旅行先を3つ提案してください。
-
-【グループ構成】
-- タイプ: ${travelGroup.type === 'couple' ? '夫婦・カップル' : travelGroup.type === 'family' ? '家族' : travelGroup.type === 'friends' ? '友人グループ' : '一人旅'}
-- 人数: ${travelGroup.memberCount}名
-
-【各メンバーの回答】
-${travelGroup.members.map((m, i) => `${m.name}（${m.ageGroup}）: ${JSON.stringify(memberAnswers[i])}`).join('\n')}
-
-【提案の方針】
-- 全員が楽しめる要素を含む場所を選ぶ
-- 年齢層や構成に適した施設・アクティビティがある
-- 具体的なスポット名や体験を含める
-
-JSON形式で返してください:
-{
-  "destinations": [
-    {
-      "name": "具体的な地名",
-      "description": "200文字程度の魅力的な説明",
-      "reason": "このグループに適している理由"
-    }
-  ]
-}` }]
+          messages: [{ role: 'user', content: prompt }]
         })
       });
 
@@ -162,14 +153,10 @@ JSON形式で返してください:
       console.log('API Response:', data);
       
       const txt = data.content?.find(c => c.type === 'text')?.text || '';
-      console.log('Extracted text:', txt);
-      
       const match = txt.match(/\{[\s\S]*\}/);
-      console.log('JSON match:', match);
       
       if (match) {
         const parsed = JSON.parse(match[0]);
-        console.log('Parsed data:', parsed);
         
         clearInterval(int);
         setLoadingProgress(100);
@@ -188,11 +175,11 @@ JSON形式で返してください:
       console.error('Error in recommendDestinations:', e);
       alert('エラー: ' + e.message);
       setLoading(false);
-      setStep('wife-complete');
+      setStep('member-complete');
     }
   };
 
-  const generatePlans = async (p1, p2) => {
+const generatePlans = async () => {
     setLoading(true);
     setStep('loading');
     setLoadingProgress(0);
@@ -207,66 +194,36 @@ JSON形式で返してください:
     });
 
     try {
+      const membersInfo = travelGroup.members.map((member, idx) => ({
+        name: member.name,
+        ageGroup: member.ageGroup,
+        answers: memberAnswers[idx]
+      }));
+
+      const groupType = travelGroup.type === 'couple' ? '夫婦・カップル' : 
+                        travelGroup.type === 'family' ? '家族' : 
+                        travelGroup.type === 'friends' ? '友人グループ' : '一人旅';
+
+      const membersText = membersInfo.map((m) => `${m.name}（${m.ageGroup}）: ${JSON.stringify(m.answers)}`).join(', ');
+
+      const prompt = `${destination}への旅行プランを3つ作成してください。グループ構成 - タイプ: ${groupType}, 人数: ${travelGroup.memberCount}名。各メンバーの好み: ${membersText}。旅行詳細 - 日数: ${additionalInfo.duration || '2泊3日'}, 交通手段: ${additionalInfo.transportation.join('、') || '指定なし'}, 予算: ${additionalInfo.budget || '標準'}。全員が楽しめる要素をバランスよく配置してください。3つのテーマ: 1.歴史・文化探訪コース, 2.美食満喫コース, 3.自然体験コース。JSON形式: {"plans":[{"theme":"テーマ名","title":"プランタイトル","description":"プラン説明","days":[{"day":1,"morning":"午前の活動","lunch":"ランチ内容","afternoon":"午後の活動","dinner":"ディナー内容"}],"accommodation":"宿泊施設の説明","tips":"旅のアドバイス"}]}`;
+
       const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
-          max_tokens: 6000,
-          messages: [{ role: 'user', content: `${destination}への旅行プランを3つ作成してください。
-
-【グループ構成】
-- タイプ: ${travelGroup.type === 'couple' ? '夫婦・カップル' : travelGroup.type === 'family' ? '家族' : travelGroup.type === 'friends' ? '友人グループ' : '一人旅'}
-- 人数: ${travelGroup.memberCount}名
-
-【各メンバーの好み】
-${travelGroup.members.map((m, i) => `${m.name}（${m.ageGroup}）: ${JSON.stringify(memberAnswers[i])}`).join('\n')}
-
-【旅行詳細】
-- 日数: ${additionalInfo.duration || '2泊3日'}
-- 交通手段: ${additionalInfo.transportation.join('、') || '指定なし'}
-- 予算: ${additionalInfo.budget || '標準'}
-
-【3つのテーマ】
-1. 歴史・文化探訪コース
-2. 美食満喫コース  
-3. 自然体験コース
-
-JSON形式:
-{
-  "plans": [
-    {
-      "theme": "テーマ名",
-      "title": "プランタイトル",
-      "description": "プラン説明",
-      "days": [
-        {
-          "day": 1,
-          "morning": "午前の活動",
-          "lunch": "ランチ内容",
-          "afternoon": "午後の活動",
-          "dinner": "ディナー内容"
-        }
-      ],
-      "accommodation": "宿泊施設の説明",
-      "tips": "旅のアドバイス"
-    }
-  ]
-}` }]
+          max_tokens: 8000,
+          messages: [{ role: 'user', content: prompt }]
+        })
       });
 
       const data = await res.json();
-      console.log('Plans API Response:', data);
-      
       const txt = data.content?.find(c => c.type === 'text')?.text || '';
-      console.log('Plans extracted text:', txt);
-      
       const match = txt.match(/\{[\s\S]*\}/);
-      console.log('Plans JSON match:', match);
       
       if (match) {
         const parsed = JSON.parse(match[0]);
-        console.log('Plans parsed data:', parsed);
         
         if (parsed.plans && Array.isArray(parsed.plans) && parsed.plans.length > 0) {
           setLoadingProgress(100);
@@ -285,7 +242,7 @@ JSON形式:
       }
     } catch (e) {
       console.error('Error in generatePlans:', e);
-      alert('プラン生成エラー: ' + e.message + '\n\nもう一度お試しください。');
+      alert('プラン生成エラー: ' + e.message);
       setLoading(false);
       setStep('additional');
     }
