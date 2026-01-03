@@ -40,7 +40,7 @@ const TravelPlannerApp = () => {
       const el = document.getElementById(`question-${currentQ}`);
       if (el) setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300);
     }
-  }, [currentQ, step, currentPerson]);
+  }, [currentQ, step, currentMemberIndex]);
 
   const questions = [
     { id: 'lifestyle', question: 'アウトドア派ですか？', description: '自然の中でのアクティビティを楽しむタイプ', icon: <Heart className="w-6 h-6" />, scaleLabels: ['全くそう思わない', 'あまりそう思わない', 'どちらでもない', 'ややそう思う', 'とてもそう思う'] },
