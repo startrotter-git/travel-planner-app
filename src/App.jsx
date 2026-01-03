@@ -1,11 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Heart, MapPin, Utensils, Clock, Wallet, Compass, Loader2, Map, Navigation, Star } from 'lucide-react';
+import { Heart, MapPin, Utensils, Clock, Wallet, Compass, Loader2, Navigation, Star, Users, User, Baby, UserPlus } from 'lucide-react';
 
 const TravelPlannerApp = () => {
   const [step, setStep] = useState('intro');
-  const [currentPerson, setCurrentPerson] = useState(1);
-  const [person1Answers, setPerson1Answers] = useState({});
-  const [person2Answers, setPerson2Answers] = useState({});
+  const [travelGroup, setTravelGroup] = useState({
+    type: '',
+    memberCount: 2,
+    members: []
+  });
+  const [currentMemberIndex, setCurrentMemberIndex] = useState(0);
+  const [memberAnswers, setMemberAnswers] = useState([]);
+  const [currentQ, setCurrentQ] = useState(0);
   const [plans, setPlans] = useState(null);
   const [loading, setLoading] = useState(false);
   const [loadingProgress, setLoadingProgress] = useState(0);
@@ -13,7 +18,6 @@ const TravelPlannerApp = () => {
   const [destination, setDestination] = useState('');
   const [destinationUndecided, setDestinationUndecided] = useState(false);
   const [recommendedDestinations, setRecommendedDestinations] = useState(null);
-  const [currentQ, setCurrentQ] = useState(0);
   const [additionalInfo, setAdditionalInfo] = useState({
     duration: '',
     transportation: [],
@@ -47,7 +51,28 @@ const TravelPlannerApp = () => {
   ];
 
   const getScoreLabel = (s) => ['', '1: 全くそう思わない', '2: あまりそう思わない', '3: どちらでもない', '4: ややそう思う', '5: とてもそう思う'][s];
-
+   const initializeTravelGroup = (type, count = 2) => {
+    const members = [];
+    
+    if (type === 'couple') {
+      members.push({ name: 'お一人目', ageGroup: '40-50代' });
+      members.push({ name: 'お二人目', ageGroup: '40-50代' });
+    } else if (type === 'family') {
+      for (let i = 0; i < count; i++) {
+        members.push({ name: `メンバー${i + 1}`, ageGroup: '40-50代' });
+      }
+    } else if (type === 'friends') {
+      for (let i = 0; i < count; i++) {
+        members.push({ name: `メンバー${i + 1}`, ageGroup: '20-30代' });
+      }
+    } else if (type === 'solo') {
+      members.push({ name: 'あなた', ageGroup: '40-50代' });
+    }
+    
+    setTravelGroup({ type, memberCount: count, members });
+    setMemberAnswers(new Array(members.length).fill(null).map(() => ({})));
+  };
+  
   // Google Maps APIで場所を検索する関数
   const searchPlaces = async (query, location = null) => {
     try {
@@ -457,11 +482,143 @@ ${d.day}日目:
               <p className="text-sm text-purple-700">時刻付きの具体的なスケジュールも作成可能</p>
             </div>
           </div>
-          <button 
-            onClick={() => setStep('questions')}
+         <button 
+            onClick={() => setStep('group-setup')}
             className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 transition shadow-lg"
           >
             はじめる
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (step === 'group-setup') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
+        <div className="max-w-3xl w-full bg-white rounded-2xl shadow-2xl p-8">
+          <div className="text-center mb-8">
+            <Users className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+            <h2 className="text-3xl font-bold text-gray-800 mb-2">旅行メンバーの構成</h2>
+            <p className="text-gray-600">どなたと旅行されますか？</p>
+          </div>
+
+          <div className="space-y-4 mb-8">
+            {/* 夫婦・カップル */}
+            <button
+              onClick={() => {
+                initializeTravelGroup('couple', 2);
+                setStep('questions');
+              }}
+              className="w-full p-6 border-2 rounded-xl transition text-left hover:border-pink-500 hover:bg-pink-50 border-gray-200"
+            >
+              <div className="flex items-center gap-4">
+                <Heart className="w-8 h-8 text-pink-500" />
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">夫婦・カップル</h3>
+                  <p className="text-sm text-gray-600">2人での旅行</p>
+                </div>
+              </div>
+            </button>
+
+            {/* 家族 */}
+            <div className="p-6 border-2 rounded-xl border-gray-200">
+              <div className="flex items-center gap-4 mb-4">
+                <Users className="w-8 h-8 text-green-500" />
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-800">家族</h3>
+                  <p className="text-sm text-gray-600">家族での旅行</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4 ml-12">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">人数</label>
+                  <select 
+                    className="w-full p-3 border-2 border-gray-300 rounded-lg"
+                    onChange={(e) => setTravelGroup(prev => ({ ...prev, memberCount: parseInt(e.target.value) }))}
+                    defaultValue="3"
+                  >
+                    <option value="3">3人</option>
+                    <option value="4">4人</option>
+                    <option value="5">5人</option>
+                    <option value="6">6人</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={() => {
+                    initializeTravelGroup('family', travelGroup.memberCount || 3);
+                    setStep('questions');
+                  }}
+                  className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition"
+                >
+                  この構成で進む
+                </button>
+              </div>
+            </div>
+
+            {/* 友人グループ */}
+            <div className="p-6 border-2 rounded-xl border-gray-200">
+              <div className="flex items-center gap-4 mb-4">
+                <UserPlus className="w-8 h-8 text-blue-500" />
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-gray-800">友人グループ</h3>
+                  <p className="text-sm text-gray-600">友人との旅行</p>
+                </div>
+              </div>
+              
+              <div className="space-y-4 ml-12">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">人数</label>
+                  <select 
+                    className="w-full p-3 border-2 border-gray-300 rounded-lg"
+                    onChange={(e) => setTravelGroup(prev => ({ ...prev, memberCount: parseInt(e.target.value) }))}
+                    defaultValue="2"
+                  >
+                    <option value="2">2人</option>
+                    <option value="3">3人</option>
+                    <option value="4">4人</option>
+                    <option value="5">5人</option>
+                    <option value="6">6人</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={() => {
+                    initializeTravelGroup('friends', travelGroup.memberCount || 2);
+                    setStep('questions');
+                  }}
+                  className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
+                >
+                  この構成で進む
+                </button>
+              </div>
+            </div>
+
+            {/* 一人旅 */}
+            <button
+              onClick={() => {
+                initializeTravelGroup('solo', 1);
+                setStep('questions');
+              }}
+              className="w-full p-6 border-2 rounded-xl transition text-left hover:border-purple-500 hover:bg-purple-50 border-gray-200"
+            >
+              <div className="flex items-center gap-4">
+                <User className="w-8 h-8 text-purple-500" />
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">一人旅</h3>
+                  <p className="text-sm text-gray-600">ソロトラベル</p>
+                </div>
+              </div>
+            </button>
+          </div>
+
+          <button
+            onClick={() => setStep('intro')}
+            className="w-full bg-gray-500 text-white py-3 rounded-xl font-semibold hover:bg-gray-600 transition"
+          >
+            戻る
           </button>
         </div>
       </div>
