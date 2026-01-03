@@ -646,9 +646,10 @@ ${d.day}日目:
   }
 
   if (step === 'questions') {
-    const currentAnswers = currentPerson === 1 ? person1Answers : person2Answers;
-    const setCurrentAnswers = currentPerson === 1 ? setPerson1Answers : setPerson2Answers;
-    const allAnswered = questions.every(q => currentAnswers[q.id]);
+    const currentMember = travelGroup.members[currentMemberIndex];
+    const currentAnswers = memberAnswers[currentMemberIndex] || {};
+    const allAnswered = questions.every(q => currentAnswers[q.id] !== undefined);
+    const isLastMember = currentMemberIndex === travelGroup.members.length - 1;
 
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
@@ -657,9 +658,11 @@ ${d.day}日目:
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">
-                  {currentPerson === 1 ? '👨 ご主人' : '👩 奥様'}の好みを教えてください
+                  {currentMember.name}の好みを教えてください
                 </h2>
-                <p className="text-gray-600 mt-1">5段階で評価してください</p>
+                <p className="text-gray-600 mt-1">
+                  {currentMember.ageGroup} | メンバー {currentMemberIndex + 1}/{travelGroup.members.length}
+                </p>
               </div>
               <div className="text-right">
                 <div className="text-sm text-gray-500">質問</div>
@@ -698,7 +701,9 @@ ${d.day}日目:
                       <button
                         key={score}
                         onClick={() => {
-                          setCurrentAnswers(prev => ({ ...prev, [q.id]: score }));
+                          const newAnswers = [...memberAnswers];
+                          newAnswers[currentMemberIndex] = { ...currentAnswers, [q.id]: score };
+                          setMemberAnswers(newAnswers);
                           if (idx < questions.length - 1) {
                             setTimeout(() => setCurrentQ(idx + 1), 300);
                           }
@@ -729,19 +734,19 @@ ${d.day}日目:
 
           {allAnswered && (
             <div className="fixed bottom-6 left-0 right-0 px-6 max-w-3xl mx-auto">
-              <button
+             <button
                 onClick={() => {
-                  if (currentPerson === 1) {
-                    setCurrentPerson(2);
+                  if (!isLastMember) {
+                    setCurrentMemberIndex(currentMemberIndex + 1);
                     setCurrentQ(0);
                     setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 100);
                   } else {
-                    setStep('wife-complete');
+                    setStep('member-complete');
                   }
                 }}
                 className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-4 rounded-xl font-semibold text-lg shadow-2xl hover:from-green-600 hover:to-teal-700 transition"
               >
-                {currentPerson === 1 ? '次へ：奥様の回答' : '回答完了'}
+                {!isLastMember ? `次へ：${travelGroup.members[currentMemberIndex + 1].name}の回答` : '回答完了'}
               </button>
             </div>
           )}
@@ -750,7 +755,7 @@ ${d.day}日目:
     );
   }
 
-  if (step === 'wife-complete') {
+  if (step === 'member-complete') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
         <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-8">
