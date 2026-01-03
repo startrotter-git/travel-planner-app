@@ -131,7 +131,30 @@ const TravelPlannerApp = () => {
           model: 'claude-sonnet-4-20250514',
           max_tokens: 3000,
           temperature: 0.8,
-          messages: [{ role: 'user', content: `40〜50代夫婦の回答から日本国内の旅行先を3つ提案。数値は使わず言葉で。夫:${JSON.stringify(p1)} 妻:${JSON.stringify(p2)} JSON形式: {"destinations":[{"name":"","description":"","reason":""}]}` }]
+         messages: [{ role: 'user', content: `以下の旅行グループに最適な日本国内の旅行先を3つ提案してください。
+
+【グループ構成】
+- タイプ: ${travelGroup.type === 'couple' ? '夫婦・カップル' : travelGroup.type === 'family' ? '家族' : travelGroup.type === 'friends' ? '友人グループ' : '一人旅'}
+- 人数: ${travelGroup.memberCount}名
+
+【各メンバーの回答】
+${travelGroup.members.map((m, i) => `${m.name}（${m.ageGroup}）: ${JSON.stringify(memberAnswers[i])}`).join('\n')}
+
+【提案の方針】
+- 全員が楽しめる要素を含む場所を選ぶ
+- 年齢層や構成に適した施設・アクティビティがある
+- 具体的なスポット名や体験を含める
+
+JSON形式で返してください:
+{
+  "destinations": [
+    {
+      "name": "具体的な地名",
+      "description": "200文字程度の魅力的な説明",
+      "reason": "このグループに適している理由"
+    }
+  ]
+}` }]
         })
       });
 
@@ -190,8 +213,46 @@ const TravelPlannerApp = () => {
         body: JSON.stringify({
           model: 'claude-sonnet-4-20250514',
           max_tokens: 6000,
-          messages: [{ role: 'user', content: `${destination}への旅行プラン3つ作成。数値使わず。夫:${JSON.stringify(p1)} 妻:${JSON.stringify(p2)} 日数:${additionalInfo.duration||'2泊3日'} 交通:${additionalInfo.transportation.join('、')||'指定なし'} 予算:${additionalInfo.budget||'標準'} テーマ:歴史/美食/自然 JSON:{"plans":[{"theme":"","title":"","description":"","days":[{"day":1,"morning":"","lunch":"","afternoon":"","dinner":""}],"accommodation":"","tips":""}]}` }]
-        })
+          messages: [{ role: 'user', content: `${destination}への旅行プランを3つ作成してください。
+
+【グループ構成】
+- タイプ: ${travelGroup.type === 'couple' ? '夫婦・カップル' : travelGroup.type === 'family' ? '家族' : travelGroup.type === 'friends' ? '友人グループ' : '一人旅'}
+- 人数: ${travelGroup.memberCount}名
+
+【各メンバーの好み】
+${travelGroup.members.map((m, i) => `${m.name}（${m.ageGroup}）: ${JSON.stringify(memberAnswers[i])}`).join('\n')}
+
+【旅行詳細】
+- 日数: ${additionalInfo.duration || '2泊3日'}
+- 交通手段: ${additionalInfo.transportation.join('、') || '指定なし'}
+- 予算: ${additionalInfo.budget || '標準'}
+
+【3つのテーマ】
+1. 歴史・文化探訪コース
+2. 美食満喫コース  
+3. 自然体験コース
+
+JSON形式:
+{
+  "plans": [
+    {
+      "theme": "テーマ名",
+      "title": "プランタイトル",
+      "description": "プラン説明",
+      "days": [
+        {
+          "day": 1,
+          "morning": "午前の活動",
+          "lunch": "ランチ内容",
+          "afternoon": "午後の活動",
+          "dinner": "ディナー内容"
+        }
+      ],
+      "accommodation": "宿泊施設の説明",
+      "tips": "旅のアドバイス"
+    }
+  ]
+}` }]
       });
 
       const data = await res.json();
