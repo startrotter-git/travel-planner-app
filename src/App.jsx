@@ -430,9 +430,11 @@ ${d.day}日目:
     }
   };
 
-  const resetApp = () => {
+const resetApp = () => {
     setStep('intro');
-    setCurrentPerson(1);
+    setTravelGroup({ type: '', memberCount: 2, members: [] });
+    setCurrentMemberIndex(0);
+    setMemberAnswers([]);
     setCurrentQ(0);
     setPlans(null);
     setDestination('');
@@ -779,7 +781,7 @@ ${d.day}日目:
                 <button
                   onClick={() => {
                     setDestinationUndecided(true);
-                    recommendDestinations(person1Answers, person2Answers);
+                    recommendDestinations();
                   }}
                   className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-700 transition"
                 >
@@ -955,7 +957,7 @@ ${d.day}日目:
 
           <div className="mt-8 space-y-3">
             <button
-              onClick={() => generatePlans(person1Answers, person2Answers)}
+              onClick={() => generatePlans()}
               className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 rounded-xl font-semibold text-lg hover:from-blue-600 hover:to-indigo-700 transition"
             >
               プランを作成
