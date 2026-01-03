@@ -6,7 +6,10 @@ const TravelPlannerApp = () => {
   const [travelGroup, setTravelGroup] = useState({
     type: '',
     memberCount: 2,
-    members: []
+    members: [],
+    hasChildren: false,
+    hasTeens: false,
+    hasSeniors: false
   });
   const [currentMemberIndex, setCurrentMemberIndex] = useState(0);
   const [memberAnswers, setMemberAnswers] = useState([]);
@@ -135,9 +138,10 @@ const TravelPlannerApp = () => {
                         travelGroup.type === 'friends' ? '友人グループ' : '一人旅';
 
       const membersText = membersInfo.map((m, i) => `${m.name}（${m.ageGroup}）: ${JSON.stringify(m.answers)}`).join(', ');
-
-      const prompt = `以下の旅行グループに最適な日本国内の旅行先を3つ提案してください。グループ構成 - タイプ: ${groupType}, 人数: ${travelGroup.memberCount}名。各メンバーの回答: ${membersText}。全員が楽しめる場所を選び、具体的なスポット名を含めてください。JSON形式で返してください: {"destinations":[{"name":"地名","description":"200文字程度の説明","reason":"このグループに適している理由"}]}`;
-
+      const groupDetails = travelGroup.hasChildren ? '小学生以下の子供が含まれます。' : 
+                           travelGroup.hasTeens ? '中高生が含まれます。' : 
+                           travelGroup.hasSeniors ? 'シニア（60代以上）が含まれます。' : '';
+      const prompt = `以下の旅行グループに最適な日本国内の旅行先を3つ提案してください。グループ構成 - タイプ: ${groupType}, 人数: ${travelGroup.memberCount}名。${groupDetails} 各メンバーの回答: ${membersText}。全員が楽しめる場所を選び、年齢層や構成に適した施設・アクティビティを含めてください。JSON形式で返してください: {"destinations":[{"name":"地名","description":"200文字程度の説明","reason":"このグループに適している理由"}]}`;
       const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -205,9 +209,11 @@ const generatePlans = async () => {
                         travelGroup.type === 'friends' ? '友人グループ' : '一人旅';
 
       const membersText = membersInfo.map((m) => `${m.name}（${m.ageGroup}）: ${JSON.stringify(m.answers)}`).join(', ');
-
-      const prompt = `${destination}への旅行プランを3つ作成してください。グループ構成 - タイプ: ${groupType}, 人数: ${travelGroup.memberCount}名。各メンバーの好み: ${membersText}。旅行詳細 - 日数: ${additionalInfo.duration || '2泊3日'}, 交通手段: ${additionalInfo.transportation.join('、') || '指定なし'}, 予算: ${additionalInfo.budget || '標準'}。全員が楽しめる要素をバランスよく配置してください。3つのテーマ: 1.歴史・文化探訪コース, 2.美食満喫コース, 3.自然体験コース。JSON形式: {"plans":[{"theme":"テーマ名","title":"プランタイトル","description":"プラン説明","days":[{"day":1,"morning":"午前の活動","lunch":"ランチ内容","afternoon":"午後の活動","dinner":"ディナー内容"}],"accommodation":"宿泊施設の説明","tips":"旅のアドバイス"}]}`;
-
+      const groupDetails = travelGroup.hasChildren ? '小学生以下の子供が含まれます（早めの食事時間、長時間移動を避ける）。' : 
+                          travelGroup.hasTeens ? '中高生が含まれます。' : 
+                          travelGroup.hasSeniors ? 'シニアが含まれます（ゆったりペース、休憩多め）。' : '';
+      
+      const prompt = `${destination}への旅行プランを3つ作成してください。グループ構成 - タイプ: ${groupType}, 人数: ${travelGroup.memberCount}名。${groupDetails} 各メンバーの好み: ${membersText}。旅行詳細 - 日数: ${additionalInfo.duration || '2泊3日'}, 交通手段: ${additionalInfo.transportation.join('、') || '指定なし'}, 予算: ${additionalInfo.budget || '標準'}。全員が楽しめる要素をバランスよく配置し、年齢層に適した活動内容にしてください。3つのテーマ: 1.歴史・文化探訪コース, 2.美食満喫コース, 3.自然体験コース。JSON形式: {"plans":[{"theme":"テーマ名","title":"プランタイトル","description":"プラン説明","days":[{"day":1,"morning":"午前の活動","lunch":"ランチ内容","afternoon":"午後の活動","dinner":"ディナー内容"}],"accommodation":"宿泊施設の説明","tips":"旅のアドバイス"}]}`;
       const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -450,7 +456,7 @@ ${d.day}日目:
 
 const resetApp = () => {
     setStep('intro');
-    setTravelGroup({ type: '', memberCount: 2, members: [] });
+    setTravelGroup({ type: '', memberCount: 2, members: [], hasChildren: false, hasTeens: false, hasSeniors: false });
     setCurrentMemberIndex(0);
     setMemberAnswers([]);
     setCurrentQ(0);
@@ -511,7 +517,7 @@ const resetApp = () => {
     );
   }
 
-  if (step === 'group-setup') {
+if (step === 'group-setup') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
         <div className="max-w-3xl w-full bg-white rounded-2xl shadow-2xl p-8">
@@ -523,21 +529,61 @@ const resetApp = () => {
 
           <div className="space-y-4 mb-8">
             {/* 夫婦・カップル */}
-            <button
-              onClick={() => {
-                initializeTravelGroup('couple', 2);
-                setStep('questions');
-              }}
-              className="w-full p-6 border-2 rounded-xl transition text-left hover:border-pink-500 hover:bg-pink-50 border-gray-200"
-            >
-              <div className="flex items-center gap-4">
+            <div className="p-6 border-2 rounded-xl border-gray-200">
+              <div className="flex items-center gap-4 mb-4">
                 <Heart className="w-8 h-8 text-pink-500" />
-                <div>
+                <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-800">夫婦・カップル</h3>
                   <p className="text-sm text-gray-600">2人での旅行</p>
                 </div>
               </div>
-            </button>
+              
+              <div className="space-y-4 ml-12">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">お一人目の年齢層</label>
+                    <select 
+                      id="couple-age1"
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg"
+                      defaultValue="40-50代"
+                    >
+                      <option value="20-30代">20-30代</option>
+                      <option value="40-50代">40-50代</option>
+                      <option value="60代以上">60代以上</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">お二人目の年齢層</label>
+                    <select 
+                      id="couple-age2"
+                      className="w-full p-3 border-2 border-gray-300 rounded-lg"
+                      defaultValue="40-50代"
+                    >
+                      <option value="20-30代">20-30代</option>
+                      <option value="40-50代">40-50代</option>
+                      <option value="60代以上">60代以上</option>
+                    </select>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const age1 = document.getElementById('couple-age1').value;
+                    const age2 = document.getElementById('couple-age2').value;
+                    const members = [
+                      { name: 'お一人目', ageGroup: age1 },
+                      { name: 'お二人目', ageGroup: age2 }
+                    ];
+                    setTravelGroup({ type: 'couple', memberCount: 2, members, hasChildren: false, hasTeens: false, hasSeniors: false });
+                    setMemberAnswers([{}, {}]);
+                    setStep('questions');
+                  }}
+                  className="w-full bg-pink-500 text-white py-3 rounded-lg font-semibold hover:bg-pink-600 transition"
+                >
+                  この構成で進む
+                </button>
+              </div>
+            </div>
 
             {/* 家族 */}
             <div className="p-6 border-2 rounded-xl border-gray-200">
@@ -551,22 +597,61 @@ const resetApp = () => {
               
               <div className="space-y-4 ml-12">
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">人数</label>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">大人の人数</label>
                   <select 
+                    id="family-adults"
                     className="w-full p-3 border-2 border-gray-300 rounded-lg"
-                    onChange={(e) => setTravelGroup(prev => ({ ...prev, memberCount: parseInt(e.target.value) }))}
-                    defaultValue="3"
+                    defaultValue="2"
                   >
+                    <option value="1">1人</option>
+                    <option value="2">2人</option>
                     <option value="3">3人</option>
                     <option value="4">4人</option>
-                    <option value="5">5人</option>
-                    <option value="6">6人</option>
                   </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">構成（該当するものにチェック）</label>
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" id="family-children" className="w-4 h-4" />
+                      <Baby className="w-4 h-4 text-blue-500" />
+                      <span className="text-sm">小学生以下の子供</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" id="family-teens" className="w-4 h-4" />
+                      <User className="w-4 h-4 text-green-500" />
+                      <span className="text-sm">中高生</span>
+                    </label>
+                    <label className="flex items-center gap-2">
+                      <input type="checkbox" id="family-seniors" className="w-4 h-4" />
+                      <Users className="w-4 h-4 text-purple-500" />
+                      <span className="text-sm">シニア（60代以上）</span>
+                    </label>
+                  </div>
                 </div>
 
                 <button
                   onClick={() => {
-                    initializeTravelGroup('family', travelGroup.memberCount || 3);
+                    const adultCount = parseInt(document.getElementById('family-adults').value);
+                    const hasChildren = document.getElementById('family-children').checked;
+                    const hasTeens = document.getElementById('family-teens').checked;
+                    const hasSeniors = document.getElementById('family-seniors').checked;
+                    
+                    const members = [];
+                    for (let i = 0; i < adultCount; i++) {
+                      members.push({ name: `メンバー${i + 1}`, ageGroup: '40-50代' });
+                    }
+                    
+                    setTravelGroup({ 
+                      type: 'family', 
+                      memberCount: adultCount, 
+                      members, 
+                      hasChildren, 
+                      hasTeens, 
+                      hasSeniors 
+                    });
+                    setMemberAnswers(new Array(adultCount).fill(null).map(() => ({})));
                     setStep('questions');
                   }}
                   className="w-full bg-green-500 text-white py-3 rounded-lg font-semibold hover:bg-green-600 transition"
@@ -590,8 +675,8 @@ const resetApp = () => {
                 <div>
                   <label className="block text-sm font-semibold text-gray-700 mb-2">人数</label>
                   <select 
+                    id="friends-count"
                     className="w-full p-3 border-2 border-gray-300 rounded-lg"
-                    onChange={(e) => setTravelGroup(prev => ({ ...prev, memberCount: parseInt(e.target.value) }))}
                     defaultValue="2"
                   >
                     <option value="2">2人</option>
@@ -602,9 +687,39 @@ const resetApp = () => {
                   </select>
                 </div>
 
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">年齢層</label>
+                  <select 
+                    id="friends-age"
+                    className="w-full p-3 border-2 border-gray-300 rounded-lg"
+                    defaultValue="20-30代"
+                  >
+                    <option value="20-30代">20-30代</option>
+                    <option value="40-50代">40-50代</option>
+                    <option value="60代以上">60代以上</option>
+                    <option value="混合">混合</option>
+                  </select>
+                </div>
+
                 <button
                   onClick={() => {
-                    initializeTravelGroup('friends', travelGroup.memberCount || 2);
+                    const count = parseInt(document.getElementById('friends-count').value);
+                    const ageGroup = document.getElementById('friends-age').value;
+                    
+                    const members = [];
+                    for (let i = 0; i < count; i++) {
+                      members.push({ name: `メンバー${i + 1}`, ageGroup });
+                    }
+                    
+                    setTravelGroup({ 
+                      type: 'friends', 
+                      memberCount: count, 
+                      members, 
+                      hasChildren: false, 
+                      hasTeens: false, 
+                      hasSeniors: false 
+                    });
+                    setMemberAnswers(new Array(count).fill(null).map(() => ({})));
                     setStep('questions');
                   }}
                   className="w-full bg-blue-500 text-white py-3 rounded-lg font-semibold hover:bg-blue-600 transition"
@@ -615,21 +730,51 @@ const resetApp = () => {
             </div>
 
             {/* 一人旅 */}
-            <button
-              onClick={() => {
-                initializeTravelGroup('solo', 1);
-                setStep('questions');
-              }}
-              className="w-full p-6 border-2 rounded-xl transition text-left hover:border-purple-500 hover:bg-purple-50 border-gray-200"
-            >
-              <div className="flex items-center gap-4">
+            <div className="p-6 border-2 rounded-xl border-gray-200">
+              <div className="flex items-center gap-4 mb-4">
                 <User className="w-8 h-8 text-purple-500" />
-                <div>
+                <div className="flex-1">
                   <h3 className="text-xl font-bold text-gray-800">一人旅</h3>
                   <p className="text-sm text-gray-600">ソロトラベル</p>
                 </div>
               </div>
-            </button>
+              
+              <div className="space-y-4 ml-12">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">年齢層</label>
+                  <select 
+                    id="solo-age"
+                    className="w-full p-3 border-2 border-gray-300 rounded-lg"
+                    defaultValue="40-50代"
+                  >
+                    <option value="20-30代">20-30代</option>
+                    <option value="40-50代">40-50代</option>
+                    <option value="60代以上">60代以上</option>
+                  </select>
+                </div>
+
+                <button
+                  onClick={() => {
+                    const ageGroup = document.getElementById('solo-age').value;
+                    const members = [{ name: 'あなた', ageGroup }];
+                    
+                    setTravelGroup({ 
+                      type: 'solo', 
+                      memberCount: 1, 
+                      members, 
+                      hasChildren: false, 
+                      hasTeens: false, 
+                      hasSeniors: false 
+                    });
+                    setMemberAnswers([{}]);
+                    setStep('questions');
+                  }}
+                  className="w-full bg-purple-500 text-white py-3 rounded-lg font-semibold hover:bg-purple-600 transition"
+                >
+                  この構成で進む
+                </button>
+              </div>
+            </div>
           </div>
 
           <button
