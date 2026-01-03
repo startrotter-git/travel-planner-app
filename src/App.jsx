@@ -434,8 +434,6 @@ ${d.day}日目:
     setStep('intro');
     setCurrentPerson(1);
     setCurrentQ(0);
-    setPerson1Answers({});
-    setPerson2Answers({});
     setPlans(null);
     setDestination('');
     setDestinationUndecided(false);
