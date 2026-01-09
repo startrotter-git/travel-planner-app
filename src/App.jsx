@@ -254,44 +254,46 @@ const generatePlans = async () => {
     }
   };
 
-  const generateDetailedSchedule = async () => {
-    // バリデーション
-    if (!detailInfo.departurePlace || !detailInfo.departureTime) {
-      alert('出発地と出発時刻を入力してください');
-      return;
-    }
+const generateDetailedSchedule = async () => {
+  if (!detailInfo.departurePlace || !detailInfo.departureTime) {
+    alert('出発地と出発時刻を入力してください');
+    return;
+  }
 
-    setLoading(true);
-    setStep('loading');
-    setLoadingProgress(0);
-    setLoadingMessage('詳細スケジュール作成中...');
+  setLoading(true);
+  setStep('loading');
+  setLoadingProgress(0);
+  setLoadingMessage('詳細スケジュール作成中...');
 
-    const progressInterval = setInterval(() => setLoadingProgress(p => Math.min(p + 3, 70)), 500);
+  const progressInterval = setInterval(() => setLoadingProgress(p => Math.min(p + 3, 70)), 500);
 
-    try {
-      // ステップ1: AIで基本スケジュールを生成
-      setLoadingMessage('AIでスケジュールを作成中...');
-      const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 6000,
-          temperature: 0.7,
-          messages: [{
-            role: 'user',
-            content: `以下の旅行プランをもとに、時刻付きの詳細スケジュールを作成してください。
+  try {
+    setLoadingMessage('AIでスケジュールを作成中...');
+    
+    const groupType = travelGroup.type === 'couple' ? '夫婦・カップル' : 
+                      travelGroup.type === 'family' ? '家族' : 
+                      travelGroup.type === 'friends' ? '友人グループ' : '一人旅';
+    
+    const groupDetails = [];
+    if (travelGroup.hasChildren) groupDetails.push('小学生以下の子供あり（早めの食事時間17:30頃、長時間移動を避ける）');
+    if (travelGroup.hasTeens) groupDetails.push('中高生あり');
+    if (travelGroup.hasSeniors) groupDetails.push('シニアあり（ゆったりペース、休憩多め）');
+    
+    const daysText = selectedPlan.days.map((d) => 
+      `${d.day}日目: 午前: ${d.morning}, ランチ: ${d.lunch}, 午後: ${d.afternoon}, ディナー: ${d.dinner}`
+    ).join('\n');
+
+    const prompt = `以下の旅行プランをもとに、時刻付きの詳細スケジュールを作成してください。
 
 【選択されたプラン】
 テーマ: ${selectedPlan.theme}
 タイトル: ${selectedPlan.title}
-${selectedPlan.days.map((d) => `
-${d.day}日目:
-- 午前: ${d.morning}
-- ランチ: ${d.lunch}
-- 午後: ${d.afternoon}
-- ディナー: ${d.dinner}
-`).join('\n')}
+${daysText}
+
+【グループ情報】
+- 構成: ${groupType}
+- 人数: ${travelGroup.memberCount}名
+${groupDetails.length > 0 ? `- 特記事項: ${groupDetails.join('、')}` : ''}
 
 【詳細情報】
 - 出発地: ${detailInfo.departurePlace}
@@ -305,28 +307,30 @@ ${d.day}日目:
    - 朝食: 基本8:00、遅くとも10:00まで
    - 昼食: 基本12:00、遅くとも14:00まで
    - 夕食: 基本18:00、遅くとも20:00まで
+   ${travelGroup.hasChildren ? '- 子供がいる場合は夕食を17:30頃に早める' : ''}
    - 各食事の間隔は必ず4時間以上空ける
-   - 例: 12:00に昼食なら、夕食は16:00以降（できれば18:00）
 
-2. 公共交通機関を使用する場合は、実在する具体的な列車名・便名を記載してください
-   例: 
-   - 新幹線: のぞみ123号、ひかり456号、こだま789号
-   - 飛行機: ANA456便、JAL789便
-   - 在来線: 特急サンダーバード、特急はるか
+2. 公共交通機関を使用する場合は、実在する具体的な列車名・便名を記載してください。
+   例: 東海道新幹線のぞみ123号、ANA456便、特急サンダーバード7号
    
-3. 出発時刻から順番に、各アクティビティの開始・終了時刻を計算してください
+   【参考: 主要路線】
+   - 東海道新幹線（東京-京都）: のぞみ、ひかり、こだま（6-21時台、30分間隔）
+   - 山陽新幹線（新大阪-広島-博多）: のぞみ、さくら、みずほ
+   - 北陸新幹線（東京-金沢）: かがやき、はくたか
+   - 特急サンダーバード（大阪-金沢）
+   - 特急はるか（京都-関空）
 
-4. 移動時間を現実的に見積もってください（新幹線、飛行機の実際の所要時間を考慮）
+3. 移動時間を現実的に見積もる（渋滞・乗り換え時間を考慮）
 
-5. 各スポットでの滞在時間を指定された時間に基づいて考慮してください
+4. 食事場所は「${destination} + エリア名 + 料理ジャンル」形式で記載してください。
+   良い例: "${destination} 駅周辺 和食"、"${destination} 繁華街 イタリアン"、"${destination} 旧市街 京料理"
+   悪い例: "レストラン"、"有名店"、"おすすめ"
 
-6. 食事場所は具体的なエリア名や料理のジャンルを記載してください
-   例: "${destination} 駅周辺 和食" "${destination} 繁華街 イタリアン"
-   
-7. 宿泊施設は具体的なエリア名とタイプを記載してください
-   例: "${destination}駅周辺 ホテル" "${destination}温泉街 旅館"
+5. 宿泊施設は「${destination} + エリア名 + 施設タイプ」形式で記載してください。
+   良い例: "${destination}駅周辺 ホテル"、"${destination}温泉街 旅館"
+   悪い例: "宿泊施設"、"ホテル"
 
-必ずJSON形式で返してください:
+JSON形式で返してください:
 {
   "detailedSchedule": {
     "destination": "${destination}",
@@ -349,110 +353,107 @@ ${d.day}日目:
             "title": "移動",
             "description": "${detailInfo.departurePlace} → ${destination}",
             "duration": "2時間20分",
-            "transportation": "東海道新幹線のぞみ123号",
-            "trainName": "のぞみ123号"
-          },
-          {
-            "time": "11:30",
-            "type": "activity",
-            "title": "観光スポット名",
-            "description": "具体的な活動内容",
-            "duration": "1時間"
+            "transportation": "東海道新幹線のぞみ123号"
           },
           {
             "time": "12:00",
             "type": "meal",
             "title": "ランチ",
-            "description": "${destination}の名物料理を楽しむ",
+            "description": "料理の説明",
             "duration": "1時間",
-            "searchQuery": "${destination} ランチ おすすめ",
-            "mealType": "lunch"
+            "searchQuery": "${destination} 駅周辺 ランチ"
+          },
+          {
+            "time": "13:00",
+            "type": "activity",
+            "title": "観光",
+            "description": "観光スポットの説明",
+            "duration": "1時間"
           },
           {
             "time": "18:00",
             "type": "meal",
             "title": "ディナー",
-            "description": "${destination}の郷土料理",
+            "description": "料理の説明",
             "duration": "2時間",
-            "searchQuery": "${destination} ディナー 郷土料理",
-            "mealType": "dinner"
+            "searchQuery": "${destination} 繁華街 ディナー"
           },
           {
             "time": "20:00",
             "type": "accommodation",
             "title": "宿泊",
-            "description": "${destination}駅周辺のホテル",
-            "searchQuery": "${destination} ホテル",
-            "accommodationType": "hotel"
+            "description": "宿泊施設の説明",
+            "searchQuery": "${destination}駅周辺 ホテル"
           }
         ]
       }
     ]
   }
-}`
-          }]
-        })
-      });
+}`;
 
-      const data = await res.json();
-      console.log('Detailed Schedule API Response:', data);
-      
-      const txt = data.content?.find(c => c.type === 'text')?.text || '';
-      const match = txt.match(/\{[\s\S]*\}/);
-      
-      if (!match) {
-        throw new Error('JSONが見つかりませんでした');
-      }
+    const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8000,
+        temperature: 0.7,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
 
-      const parsed = JSON.parse(match[0]);
-      console.log('Parsed detailed schedule:', parsed);
+    const data = await res.json();
+    const txt = data.content?.find(c => c.type === 'text')?.text || '';
+    const match = txt.match(/\{[\s\S]*\}/);
+    
+    if (!match) {
+      throw new Error('JSONが見つかりませんでした');
+    }
 
-      clearInterval(progressInterval);
-      setLoadingProgress(75);
-      setLoadingMessage('レストランとホテルを検索中...');
+    const parsed = JSON.parse(match[0]);
 
-      // ステップ2: Google Maps APIで食事場所とホテルを検索
-      const enhancedSchedule = { ...parsed.detailedSchedule };
-      
-      for (const day of enhancedSchedule.days) {
-        for (const activity of day.activities) {
-          if ((activity.type === 'meal' || activity.type === 'accommodation') && activity.searchQuery) {
-            console.log(`Searching for activity: ${activity.title}, query: ${activity.searchQuery}`);
-            try {
-              const places = await searchPlaces(activity.searchQuery, destination);
-              console.log(`Found ${places.length} places for ${activity.title}`);
-              if (places && places.length > 0) {
-                activity.placeOptions = places;
-                console.log('Added placeOptions to activity:', activity);
-              } else {
-                console.log('No places found for:', activity.searchQuery);
-              }
-            } catch (error) {
-              console.error(`Error searching for ${activity.searchQuery}:`, error);
+    clearInterval(progressInterval);
+    setLoadingProgress(75);
+    setLoadingMessage('レストランとホテルを検索中...');
+
+    const enhancedSchedule = { ...parsed.detailedSchedule };
+    
+    for (const day of enhancedSchedule.days) {
+      for (const activity of day.activities) {
+        if ((activity.type === 'meal' || activity.type === 'accommodation') && activity.searchQuery) {
+          try {
+            console.log(`Searching for: ${activity.searchQuery}`);
+            const places = await searchPlaces(activity.searchQuery, destination);
+            if (places && places.length > 0) {
+              activity.placeOptions = places;
+              console.log(`Found ${places.length} places for ${activity.searchQuery}`);
+            } else {
+              console.log(`No places found for ${activity.searchQuery}`);
             }
+          } catch (error) {
+            console.error(`Error searching for ${activity.searchQuery}:`, error);
           }
         }
       }
-
-      console.log('Final enhanced schedule:', enhancedSchedule);
-
-      setLoadingProgress(100);
-      setLoadingMessage('完了！');
-      
-      setTimeout(() => {
-        setDetailedSchedule(enhancedSchedule);
-        setStep('detailed-schedule');
-        setLoading(false);
-      }, 500);
-      
-    } catch (e) {
-      clearInterval(progressInterval);
-      console.error('Error in generateDetailedSchedule:', e);
-      alert('詳細スケジュール生成エラー: ' + e.message);
-      setLoading(false);
-      setStep('detail-input');
     }
-  };
+
+    setLoadingProgress(100);
+    setLoadingMessage('完了！');
+    
+    setTimeout(() => {
+      setDetailedSchedule(enhancedSchedule);
+      setStep('detailed-schedule');
+      setLoading(false);
+    }, 500);
+    
+  } catch (e) {
+    clearInterval(progressInterval);
+    console.error('Error in generateDetailedSchedule:', e);
+    alert('詳細スケジュール生成エラー: ' + e.message);
+    setLoading(false);
+    setStep('detail-input');
+  }
+};
 
 const resetApp = () => {
     setStep('intro');
