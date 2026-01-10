@@ -1612,7 +1612,7 @@ if (step === 'questions') {
                     const style = getActivityStyle(activity.type);
                     
                     return (
-                      <<div key={actIdx} className="relative pl-28">
+                      <div key={actIdx} className="relative pl-28">
                         {/* 時刻表示（左側） */}
                         <div className="absolute left-0 top-1 w-16 text-right">
                           <div className={`${fs.label} font-bold text-gray-500`}>
