@@ -338,13 +338,27 @@ const generatePlans = async () => {
     setLoadingProgress(0);
     setLoadingMessage('プラン作成中...');
 
-    // より速く、段階的に進行（500ms間隔）
-    [0, 500, 1000, 1500, 2000].forEach((d, i) => {
-      setTimeout(() => {
-        setLoadingProgress(15 * (i + 1)); // 15%, 30%, 45%, 60%, 75%
-        const msgs = ['分析中...', '歴史プラン作成中...', '美食プラン作成中...', '自然プラン作成中...', '最終調整中...'];
-        setLoadingMessage(msgs[i]);
-      }, d);
+    // 滑らかなプログレス（50ms間隔で1%ずつ、最大85%まで）
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(p => {
+        if (p < 85) {
+          return p + 1;
+        }
+        return p;
+      });
+    }, 100);
+
+    // メッセージ変更（段階的）
+    const messages = [
+      { time: 0, msg: 'プラン作成中...' },
+      { time: 2000, msg: '歴史・文化探訪コースを作成中...' },
+      { time: 4000, msg: '美食満喫コースを作成中...' },
+      { time: 6000, msg: '自然体験コースを作成中...' },
+      { time: 7000, msg: '最終調整中...' }
+    ];
+
+    messages.forEach(({ time, msg }) => {
+      setTimeout(() => setLoadingMessage(msg), time);
     });
 
     try {
@@ -358,12 +372,15 @@ const generatePlans = async () => {
                         travelGroup.type === 'family' ? '家族' : 
                         travelGroup.type === 'friends' ? '友人グループ' : '一人旅';
 
+      const groupDetails = [];
+      if (travelGroup.hasChildren) groupDetails.push('小学生以下の子供あり（早めの食事時間17:30頃、長時間移動を避ける）');
+      if (travelGroup.hasTeens) groupDetails.push('中高生あり');
+      if (travelGroup.hasSeniors) groupDetails.push('シニアあり（ゆったりペース、休憩多め）');
+
       const membersText = membersInfo.map((m) => `${m.name}（${m.ageGroup}）: ${JSON.stringify(m.answers)}`).join(', ');
-      const groupDetails = travelGroup.hasChildren ? '小学生以下の子供が含まれます（早めの食事時間、長時間移動を避ける）。' : 
-                          travelGroup.hasTeens ? '中高生が含まれます。' : 
-                          travelGroup.hasSeniors ? 'シニアが含まれます（ゆったりペース、休憩多め）。' : '';
-      
-      const prompt = `${destination}への旅行プランを3つ作成してください。グループ構成 - タイプ: ${groupType}, 人数: ${travelGroup.memberCount}名。${groupDetails} 各メンバーの好み: ${membersText}。旅行詳細 - 日数: ${additionalInfo.duration || '2泊3日'}, 交通手段: ${additionalInfo.transportation.join('、') || '指定なし'}, 予算: ${additionalInfo.budget || '標準'}。全員が楽しめる要素をバランスよく配置し、年齢層に適した活動内容にしてください。3つのテーマ: 1.歴史・文化探訪コース, 2.美食満喫コース, 3.自然体験コース。JSON形式: {"plans":[{"theme":"テーマ名","title":"プランタイトル","description":"プラン説明","days":[{"day":1,"morning":"午前の活動","lunch":"ランチ内容","afternoon":"午後の活動","dinner":"ディナー内容"}],"accommodation":"宿泊施設の説明","tips":"旅のアドバイス"}]}`;
+
+      const prompt = `${destination}への旅行プランを3つ作成してください。グループ構成 - タイプ: ${groupType}, 人数: ${travelGroup.memberCount}名。${groupDetails.length > 0 ? groupDetails.join('、') + '。' : ''} 各メンバーの好み: ${membersText}。旅行詳細 - 日数: ${additionalInfo.duration || '2泊3日'}, 交通手段: ${additionalInfo.transportation.join('、') || '指定なし'}, 予算: ${additionalInfo.budget || '標準'}。全員が楽しめる要素をバランスよく配置し、年齢層に適した活動内容にしてください。3つのテーマ: 1.歴史・文化探訪コース, 2.美食満喫コース, 3.自然体験コース。JSON形式: {"plans":[{"theme":"テーマ名","title":"プランタイトル","description":"プラン説明","days":[{"day":1,"morning":"午前の活動","lunch":"ランチ内容","afternoon":"午後の活動","dinner":"ディナー内容"}],"accommodation":"宿泊施設の説明","tips":"旅のアドバイス"}]}`;
+
       const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -382,14 +399,25 @@ const generatePlans = async () => {
         const parsed = JSON.parse(match[0]);
         
         if (parsed.plans && Array.isArray(parsed.plans) && parsed.plans.length > 0) {
-          setLoadingProgress(100);
+          // プログレスを素早く100%に
+          clearInterval(progressInterval);
+          setLoadingProgress(85);
           setLoadingMessage('完了！');
           
-          setTimeout(() => {
-            setPlans(parsed.plans);
-            setStep('results');
-            setLoading(false);
-          }, 500);
+          // 85% → 100%へ滑らかに
+          let current = 85;
+          const finalInterval = setInterval(() => {
+            current += 3;
+            setLoadingProgress(current);
+            if (current >= 100) {
+              clearInterval(finalInterval);
+              setTimeout(() => {
+                setPlans(parsed.plans);
+                setStep('results');
+                setLoading(false);
+              }, 300);
+            }
+          }, 50);
         } else {
           throw new Error('プランデータが正しくありません');
         }
@@ -397,6 +425,7 @@ const generatePlans = async () => {
         throw new Error('JSONが見つかりませんでした');
       }
     } catch (e) {
+      clearInterval(progressInterval);
       console.error('Error in generatePlans:', e);
       alert('プラン生成エラー: ' + e.message);
       setLoading(false);
@@ -1425,10 +1454,9 @@ if (step === 'questions') {
           <div className="grid md:grid-cols-3 gap-6 mb-8">
             {plans.map((plan, idx) => (
               <div 
-                key={idx}
-                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden group cursor-pointer"
-                onClick={() => setSelectedPlan(plan)}
-              >
+  key={idx}
+  className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden group"
+>
                 {/* ヘッダー画像 */}
                 <div className="relative h-48 bg-gradient-to-br from-sky-100 to-blue-200 overflow-hidden">
                   <img 
@@ -1480,11 +1508,15 @@ if (step === 'questions') {
 
                   {/* 選択ボタン */}
                   <button
-                    onClick={() => setSelectedPlan(plan)}
-                    className={`w-full bg-sky-500 text-white py-3 rounded-lg ${fs.button} font-semibold hover:bg-sky-600 transition`}
-                  >
-                    このプランを選択
-                  </button>
+  onClick={(e) => {
+    e.stopPropagation();
+    setSelectedPlan(plan);
+    setStep('detail-input');
+  }}
+  className={`w-full bg-sky-500 text-white py-3 rounded-lg ${fs.button} font-semibold hover:bg-sky-600 transition`}
+>
+  このプランを選択
+</button>
                 </div>
               </div>
             ))}
