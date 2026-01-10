@@ -338,23 +338,23 @@ const generatePlans = async () => {
     setLoadingProgress(0);
     setLoadingMessage('プラン作成中...');
 
-    // 滑らかなプログレス（50ms間隔で1%ずつ、最大85%まで）
+    // 滑らかなプログレス（150ms間隔で1%ずつ、最大99%まで）
     const progressInterval = setInterval(() => {
       setLoadingProgress(p => {
-        if (p < 85) {
+        if (p < 99) {
           return p + 1;
         }
         return p;
       });
-    }, 100);
+    }, 150);
 
     // メッセージ変更（段階的）
     const messages = [
       { time: 0, msg: 'プラン作成中...' },
-      { time: 2000, msg: '歴史・文化探訪コースを作成中...' },
-      { time: 4000, msg: '美食満喫コースを作成中...' },
-      { time: 6000, msg: '自然体験コースを作成中...' },
-      { time: 7000, msg: '最終調整中...' }
+      { time: 3000, msg: '歴史・文化探訪コースを作成中...' },
+      { time: 6000, msg: '美食満喫コースを作成中...' },
+      { time: 9000, msg: '自然体験コースを作成中...' },
+      { time: 12000, msg: '最終調整中...' }
     ];
 
     messages.forEach(({ time, msg }) => {
@@ -399,25 +399,17 @@ const generatePlans = async () => {
         const parsed = JSON.parse(match[0]);
         
         if (parsed.plans && Array.isArray(parsed.plans) && parsed.plans.length > 0) {
-          // プログレスを素早く100%に
+          // 即座に100%に
           clearInterval(progressInterval);
-          setLoadingProgress(85);
+          setLoadingProgress(100);
           setLoadingMessage('完了！');
           
-          // 85% → 100%へ滑らかに
-          let current = 85;
-          const finalInterval = setInterval(() => {
-            current += 3;
-            setLoadingProgress(current);
-            if (current >= 100) {
-              clearInterval(finalInterval);
-              setTimeout(() => {
-                setPlans(parsed.plans);
-                setStep('results');
-                setLoading(false);
-              }, 300);
-            }
-          }, 50);
+          // 短い待機後に画面遷移
+          setTimeout(() => {
+            setPlans(parsed.plans);
+            setStep('results');
+            setLoading(false);
+          }, 400);
         } else {
           throw new Error('プランデータが正しくありません');
         }
@@ -434,36 +426,43 @@ const generatePlans = async () => {
   };
 
 const generateDetailedSchedule = async () => {
-  if (!detailInfo.departurePlace || !detailInfo.departureTime) {
-    alert('出発地と出発時刻を入力してください');
-    return;
-  }
+    if (!detailInfo.departurePlace || !detailInfo.departureTime) {
+      alert('出発地と出発時刻を入力してください');
+      return;
+    }
 
-  setLoading(true);
-  setStep('loading');
-  setLoadingProgress(0);
-  setLoadingMessage('詳細スケジュール作成中...');
+    setLoading(true);
+    setStep('loading');
+    setLoadingProgress(0);
+    setLoadingMessage('詳細スケジュール作成中...');
 
-  // より速いプログレス（200ms間隔で5%ずつ、最大80%まで）
-    const progressInterval = setInterval(() => setLoadingProgress(p => Math.min(p + 5, 80)), 200);
+    // 滑らかなプログレス（120ms間隔で1%ずつ、最大99%まで）
+    const progressInterval = setInterval(() => {
+      setLoadingProgress(p => {
+        if (p < 99) {
+          return p + 1;
+        }
+        return p;
+      });
+    }, 120);
 
-  try {
-    setLoadingMessage('AIでスケジュールを作成中...');
-    
-    const groupType = travelGroup.type === 'couple' ? '夫婦・カップル' : 
-                      travelGroup.type === 'family' ? '家族' : 
-                      travelGroup.type === 'friends' ? '友人グループ' : '一人旅';
-    
-    const groupDetails = [];
-    if (travelGroup.hasChildren) groupDetails.push('小学生以下の子供あり（早めの食事時間17:30頃、長時間移動を避ける）');
-    if (travelGroup.hasTeens) groupDetails.push('中高生あり');
-    if (travelGroup.hasSeniors) groupDetails.push('シニアあり（ゆったりペース、休憩多め）');
-    
-    const daysText = selectedPlan.days.map((d) => 
-      `${d.day}日目: 午前: ${d.morning}, ランチ: ${d.lunch}, 午後: ${d.afternoon}, ディナー: ${d.dinner}`
-    ).join('\n');
+    try {
+      setLoadingMessage('AIでスケジュールを作成中...');
+      
+      const groupType = travelGroup.type === 'couple' ? '夫婦・カップル' : 
+                        travelGroup.type === 'family' ? '家族' : 
+                        travelGroup.type === 'friends' ? '友人グループ' : '一人旅';
+      
+      const groupDetails = [];
+      if (travelGroup.hasChildren) groupDetails.push('小学生以下の子供あり（早めの食事時間17:30頃、長時間移動を避ける）');
+      if (travelGroup.hasTeens) groupDetails.push('中高生あり');
+      if (travelGroup.hasSeniors) groupDetails.push('シニアあり（ゆったりペース、休憩多め）');
+      
+      const daysText = selectedPlan.days.map((d) => 
+        `${d.day}日目: 午前: ${d.morning}, ランチ: ${d.lunch}, 午後: ${d.afternoon}, ディナー: ${d.dinner}`
+      ).join('\n');
 
-    const prompt = `以下の旅行プランをもとに、時刻付きの詳細スケジュールを作成してください。
+      const prompt = `以下の旅行プランをもとに、時刻付きの詳細スケジュールを作成してください。
 
 【選択されたプラン】
 テーマ: ${selectedPlan.theme}
@@ -564,51 +563,46 @@ JSON形式で返してください:
   }
 }`;
 
-    const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 8000,
-        temperature: 0.7,
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+      const res = await fetch(`${API_BASE_URL}/api/claude/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 8000,
+          temperature: 0.7,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
 
-    const data = await res.json();
-    const txt = data.content?.find(c => c.type === 'text')?.text || '';
-    const match = txt.match(/\{[\s\S]*\}/);
-    
-    if (!match) {
-      throw new Error('JSONが見つかりませんでした');
-    }
+      const data = await res.json();
+      const txt = data.content?.find(c => c.type === 'text')?.text || '';
+      const match = txt.match(/\{[\s\S]*\}/);
+      
+      if (!match) {
+        throw new Error('JSONが見つかりませんでした');
+      }
 
-    const parsed = JSON.parse(match[0]);
+      const parsed = JSON.parse(match[0]);
 
-    clearInterval(progressInterval);
-    setLoadingProgress(75);
-    setLoadingMessage('レストランとホテルを検索中...');
+      setLoadingMessage('実際の経路情報を取得中...');
 
-    const enhancedSchedule = { ...parsed.detailedSchedule };
-    console.log('Fetching route information...');
+      const enhancedSchedule = { ...parsed.detailedSchedule };
+      
+      // 出発地→目的地の実際の経路情報を取得
+      console.log('Fetching route information...');
       const routeInfo = await getRouteInfo(detailInfo.departurePlace, destination, detailInfo.departureTime);
       
       if (routeInfo && routeInfo.steps.length > 0) {
         console.log('Route info obtained:', routeInfo);
         
-        // 最初の日の移動アクティビティを実際の経路に置き換え
         if (enhancedSchedule.days && enhancedSchedule.days.length > 0) {
           const firstDay = enhancedSchedule.days[0];
           const travelActivityIndex = firstDay.activities.findIndex(a => a.type === 'travel');
           
           if (travelActivityIndex !== -1) {
-            // 実際の経路ステップを追加
             const newActivities = [...firstDay.activities];
-            
-            // 元の移動アクティビティを削除
             newActivities.splice(travelActivityIndex, 1);
             
-            // 実際の経路ステップを挿入
             let currentTime = detailInfo.departureTime;
             routeInfo.steps.forEach((step, idx) => {
               const [hours, minutes] = currentTime.split(':').map(Number);
@@ -627,14 +621,12 @@ JSON形式で返してください:
               
               newActivities.splice(travelActivityIndex + idx, 0, stepActivity);
               
-              // 次のステップの開始時刻を計算
               const endMinutes = startMinutes + Math.ceil(step.durationValue / 60);
               const endHours = Math.floor(endMinutes / 60);
               const endMins = endMinutes % 60;
               currentTime = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
             });
             
-            // 到着後のアクティビティの時刻を調整
             const [lastHours, lastMinutes] = currentTime.split(':').map(Number);
             let adjustedMinutes = lastHours * 60 + lastMinutes;
             
@@ -643,13 +635,11 @@ JSON形式で返してください:
               const actTotalMinutes = actHours * 60 + actMinutes;
               
               if (actTotalMinutes < adjustedMinutes) {
-                // 時刻を調整
                 const newHours = Math.floor(adjustedMinutes / 60);
                 const newMins = adjustedMinutes % 60;
                 newActivities[i].time = `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
               }
               
-              // 次のアクティビティのために時刻を更新
               const durationMatch = newActivities[i].duration?.match(/(\d+)/);
               if (durationMatch) {
                 adjustedMinutes += parseInt(durationMatch[1]);
@@ -662,44 +652,48 @@ JSON形式で返してください:
       } else {
         console.log('No route info available, using AI-generated schedule');
       }
-    
-    for (const day of enhancedSchedule.days) {
-      for (const activity of day.activities) {
-        if ((activity.type === 'meal' || activity.type === 'accommodation') && activity.searchQuery) {
-          try {
-            console.log(`Searching for: ${activity.searchQuery}`);
-            const places = await searchPlaces(activity.searchQuery, destination);
-            if (places && places.length > 0) {
-              activity.placeOptions = places;
-              console.log(`Found ${places.length} places for ${activity.searchQuery}`);
-            } else {
-              console.log(`No places found for ${activity.searchQuery}`);
+
+      setLoadingMessage('レストランとホテルを検索中...');
+      
+      for (const day of enhancedSchedule.days) {
+        for (const activity of day.activities) {
+          if ((activity.type === 'meal' || activity.type === 'accommodation') && activity.searchQuery) {
+            try {
+              console.log(`Searching for: ${activity.searchQuery}`);
+              const places = await searchPlaces(activity.searchQuery, destination);
+              if (places && places.length > 0) {
+                activity.placeOptions = places;
+                console.log(`Found ${places.length} places for ${activity.searchQuery}`);
+              } else {
+                console.log(`No places found for ${activity.searchQuery}`);
+              }
+            } catch (error) {
+              console.error(`Error searching for ${activity.searchQuery}:`, error);
             }
-          } catch (error) {
-            console.error(`Error searching for ${activity.searchQuery}:`, error);
           }
         }
       }
-    }
 
-   setLoadingProgress(100);
+      // 即座に100%に
+      clearInterval(progressInterval);
+      setLoadingProgress(100);
       setLoadingMessage('完了！');
       
-      // すぐに表示
+      // 短い待機後に画面遷移
       setTimeout(() => {
         setDetailedSchedule(enhancedSchedule);
         setStep('detailed-schedule');
         setLoading(false);
-      }, 200);
-    
-  } catch (e) {
-    clearInterval(progressInterval);
-    console.error('Error in generateDetailedSchedule:', e);
-    alert('詳細スケジュール生成エラー: ' + e.message);
-    setLoading(false);
-    setStep('detail-input');
-  }
-};
+      }, 400);
+      
+    } catch (e) {
+      clearInterval(progressInterval);
+      console.error('Error in generateDetailedSchedule:', e);
+      alert('詳細スケジュール生成エラー: ' + e.message);
+      setLoading(false);
+      setStep('detail-input');
+    }
+  };
 
 const resetApp = () => {
     setStep('intro');
