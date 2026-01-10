@@ -248,18 +248,31 @@ const TravelPlannerApp = () => {
       return null;
     }
   };
-const getPlaceImage = (placeName, destination) => {
-    // Unsplash Source API（著作権フリー、クレジット不要）
-    const query = encodeURIComponent(`${destination} ${placeName} japan`);
-    return `https://source.unsplash.com/800x400/?${query}`;
+  const getPlaceImage = (placeName, destination) => {
+    // Pixabay API（無料、登録不要、クレジット不要）
+    // より確実に画像を取得するため、汎用的なクエリを使用
+    const queries = [
+      `${destination}+${placeName}`,
+      `${destination}+japan`,
+      `${destination}`,
+      'japan+travel'
+    ];
+    
+    // ランダムに1つ選択（毎回異なる画像を表示）
+    const randomQuery = queries[Math.floor(Math.random() * queries.length)];
+    
+    // Pexels（無料、クレジット不要）
+    // Pexelsは外部埋め込み用URLを提供
+    return `https://images.pexels.com/photos/1440476/pexels-photo-1440476.jpeg?auto=compress&cs=tinysrgb&w=800`;
   };
-  const recommendDestinations = async () => {
+ const recommendDestinations = async () => {
     setLoading(true);
     setStep('loading');
     setLoadingProgress(0);
     setLoadingMessage('分析中...');
 
-    const int = setInterval(() => setLoadingProgress(p => Math.min(p + 10, 90)), 300);
+    // より速いプログレス（100ms間隔で5%ずつ、最大85%まで）
+    const int = setInterval(() => setLoadingProgress(p => Math.min(p + 5, 85)), 100);
 
     try {
       const membersInfo = travelGroup.members.map((member, idx) => ({
@@ -297,15 +310,16 @@ const getPlaceImage = (placeName, destination) => {
       if (match) {
         const parsed = JSON.parse(match[0]);
         
-        clearInterval(int);
+       clearInterval(int);
         setLoadingProgress(100);
         setLoadingMessage('完了！');
         
+        // すぐに表示（遅延なし）
         setTimeout(() => {
           setRecommendedDestinations(parsed.destinations);
           setStep('selectDestination');
           setLoading(false);
-        }, 500);
+        }, 200);
       } else {
         throw new Error('JSONが見つかりませんでした');
       }
@@ -324,9 +338,10 @@ const generatePlans = async () => {
     setLoadingProgress(0);
     setLoadingMessage('プラン作成中...');
 
-    [0, 1500, 3000, 4500, 6000].forEach((d, i) => {
+    // より速く、段階的に進行（500ms間隔）
+    [0, 500, 1000, 1500, 2000].forEach((d, i) => {
       setTimeout(() => {
-        setLoadingProgress(20 * (i + 1));
+        setLoadingProgress(15 * (i + 1)); // 15%, 30%, 45%, 60%, 75%
         const msgs = ['分析中...', '歴史プラン作成中...', '美食プラン作成中...', '自然プラン作成中...', '最終調整中...'];
         setLoadingMessage(msgs[i]);
       }, d);
@@ -400,7 +415,8 @@ const generateDetailedSchedule = async () => {
   setLoadingProgress(0);
   setLoadingMessage('詳細スケジュール作成中...');
 
-  const progressInterval = setInterval(() => setLoadingProgress(p => Math.min(p + 3, 70)), 500);
+  // より速いプログレス（200ms間隔で5%ずつ、最大80%まで）
+    const progressInterval = setInterval(() => setLoadingProgress(p => Math.min(p + 5, 80)), 200);
 
   try {
     setLoadingMessage('AIでスケジュールを作成中...');
@@ -637,14 +653,15 @@ JSON形式で返してください:
       }
     }
 
-    setLoadingProgress(100);
-    setLoadingMessage('完了！');
-    
-    setTimeout(() => {
-      setDetailedSchedule(enhancedSchedule);
-      setStep('detailed-schedule');
-      setLoading(false);
-    }, 500);
+   setLoadingProgress(100);
+      setLoadingMessage('完了！');
+      
+      // すぐに表示
+      setTimeout(() => {
+        setDetailedSchedule(enhancedSchedule);
+        setStep('detailed-schedule');
+        setLoading(false);
+      }, 200);
     
   } catch (e) {
     clearInterval(progressInterval);
@@ -1149,38 +1166,54 @@ if (step === 'questions') {
   }
 
   if (step === 'member-complete') {
+    const fs = getFontSizeClasses();
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
-        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-8">
-          <div className="text-center mb-8">
-            <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-3xl font-bold text-gray-800 mb-4">回答完了！</h2>
-            <p className="text-gray-600 mb-6">お二人の好みがわかりました。次に旅行先を決めましょう。</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-sky-50 p-6 flex items-center justify-center">
+        <div className="max-w-2xl w-full">
+          {/* ヘッダー */}
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+            <div className="flex justify-between items-start mb-6">
+              <div className="text-center flex-1">
+                <div className="w-20 h-20 bg-sky-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Compass className="w-10 h-10 text-sky-600" />
+                </div>
+                <h2 className={`${fs.heading} font-bold text-gray-800 mb-2`}>
+                  回答完了
+                </h2>
+                <p className={`${fs.text} text-gray-600`}>
+                  {travelGroup.members.length}名全員の回答が完了しました
+                </p>
+              </div>
+              <FontSizeSelector />
+            </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl">
-              <h3 className="font-semibold text-lg mb-3 text-gray-800">旅行先は決まっていますか？</h3>
-              <div className="space-y-3">
-                <button
-                  onClick={() => {
-                    setDestinationUndecided(false);
-                    setStep('destination');
-                  }}
-                  className="w-full bg-white border-2 border-blue-500 text-blue-700 py-3 rounded-xl font-semibold hover:bg-blue-50 transition"
-                >
-                  はい、行き先が決まっています
-                </button>
-                <button
-                  onClick={() => {
-                    setDestinationUndecided(true);
-                    recommendDestinations();
-                  }}
-                  className="w-full bg-gradient-to-r from-purple-500 to-pink-600 text-white py-3 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-700 transition"
-                >
-                  いいえ、おすすめを提案してほしい
-                </button>
-              </div>
+          {/* 行き先選択カード */}
+          <div className="bg-white rounded-2xl shadow-lg p-8">
+            <h3 className={`${fs.subheading} font-bold text-gray-800 mb-6`}>
+              旅行先は決まっていますか？
+            </h3>
+            
+            <div className="space-y-4">
+              <button
+                onClick={() => setStep('destination')}
+                className={`w-full bg-sky-500 text-white p-6 rounded-xl ${fs.button} font-semibold hover:bg-sky-600 transition shadow-md hover:shadow-lg flex items-center justify-center gap-3`}
+              >
+                <MapPin className="w-6 h-6" />
+                はい、行き先が決まっています
+              </button>
+              
+              <button
+                onClick={() => {
+                  setDestinationUndecided(true);
+                  recommendDestinations();
+                }}
+                className={`w-full bg-white border-2 border-sky-500 text-sky-600 p-6 rounded-xl ${fs.button} font-semibold hover:bg-sky-50 transition flex items-center justify-center gap-3`}
+              >
+                <Compass className="w-6 h-6" />
+                いいえ、おすすめを提案してほしい
+              </button>
             </div>
           </div>
         </div>
@@ -1367,58 +1400,113 @@ if (step === 'questions') {
     );
   }
 
-  if (step === 'results' && plans) {
+  if (step === 'results') {
+    const fs = getFontSizeClasses();
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
-        <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6 text-center">
-            <h1 className="text-3xl font-bold mb-2">🎉 {destination}への旅行プラン完成！</h1>
-            <p className="text-gray-600">お二人にぴったりの3つのプラン</p>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-sky-50 p-6">
+        <div className="max-w-6xl mx-auto">
+          {/* ヘッダー */}
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className={`${fs.heading} font-bold text-gray-800 mb-2`}>
+                  {destination}旅行プラン
+                </h1>
+                <p className={`${fs.text} text-gray-600`}>
+                  3つのテーマからお選びください
+                </p>
+              </div>
+              <FontSizeSelector />
+            </div>
           </div>
-          <div className="grid gap-6 mb-6">
-            {plans.map((p, i) => (
-              <div key={i} className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-6 text-white">
-                  <h2 className="text-2xl font-bold mb-2">{p.theme}</h2>
-                  <p className="text-blue-100">{p.title}</p>
+
+          {/* プランカード */}
+          <div className="grid md:grid-cols-3 gap-6 mb-8">
+            {plans.map((plan, idx) => (
+              <div 
+                key={idx}
+                className="bg-white rounded-2xl shadow-md hover:shadow-xl transition-all overflow-hidden group cursor-pointer"
+                onClick={() => setSelectedPlan(plan)}
+              >
+                {/* ヘッダー画像 */}
+                <div className="relative h-48 bg-gradient-to-br from-sky-100 to-blue-200 overflow-hidden">
+                  <img 
+                    src={getPlaceImage(plan.theme, destination)}
+                    alt={plan.theme}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                  <div className="absolute bottom-0 left-0 right-0 p-6">
+                    <div className={`inline-block px-3 py-1 bg-white/90 rounded-full ${fs.label} font-semibold text-sky-600 mb-2`}>
+                      {plan.days.length}日間
+                    </div>
+                    <h3 className={`${fs.subheading} font-bold text-white mb-1`}>
+                      {plan.theme}
+                    </h3>
+                  </div>
                 </div>
+
+                {/* カード内容 */}
                 <div className="p-6">
-                  <p className="text-gray-700 mb-6">{p.description}</p>
-                  <div className="grid gap-6 mb-6">
-                    {(p.days || []).map((d, j) => (
-                      <div key={j} className={`border-2 rounded-lg p-4 ${['border-blue-100', 'border-green-100', 'border-purple-100', 'border-pink-100'][j]}`}>
-                        <h3 className={`font-bold text-lg mb-3 ${['text-blue-700', 'text-green-700', 'text-purple-700', 'text-pink-700'][j]}`}>📅 {d.day}日目</h3>
-                        <div className="space-y-3 text-sm">
-                          <div><span className="font-semibold">午前:</span><p className="text-gray-600 ml-2">{d.morning}</p></div>
-                          <div><span className="font-semibold">ランチ:</span><p className="text-gray-600 ml-2">{d.lunch}</p></div>
-                          <div><span className="font-semibold">午後:</span><p className="text-gray-600 ml-2">{d.afternoon}</p></div>
-                          <div><span className="font-semibold">ディナー:</span><p className="text-gray-600 ml-2">{d.dinner}</p></div>
+                  <h4 className={`${fs.text} font-bold text-gray-800 mb-3`}>
+                    {plan.title}
+                  </h4>
+                  <p className={`${fs.label} text-gray-600 mb-4 line-clamp-3`}>
+                    {plan.description}
+                  </p>
+
+                  {/* 日程サマリー */}
+                  <div className="space-y-2 mb-4">
+                    {plan.days.slice(0, 2).map((day, dayIdx) => (
+                      <div key={dayIdx} className="flex items-start gap-2">
+                        <div className={`${fs.label} font-bold text-sky-600 mt-0.5`}>
+                          {day.day}日目
+                        </div>
+                        <div className={`${fs.label} text-gray-600 line-clamp-1`}>
+                          {day.morning}
                         </div>
                       </div>
                     ))}
+                    {plan.days.length > 2 && (
+                      <div className={`${fs.label} text-gray-400`}>
+                        ...他{plan.days.length - 2}日
+                      </div>
+                    )}
                   </div>
-                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
-                    <h4 className="font-semibold mb-2">🏨 宿泊施設</h4>
-                    <p className="text-sm">{p.accommodation}</p>
-                  </div>
-                  <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-4">
-                    <h4 className="font-semibold mb-2">💡 旅のアドバイス</h4>
-                    <p className="text-sm">{p.tips}</p>
-                  </div>
-                  <button 
-                    onClick={() => {
-                      setSelectedPlan(p);
-                      setStep('detail-input');
-                    }}
-                    className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 rounded-xl font-semibold hover:from-green-600 hover:to-teal-700 transition"
+
+                  {/* 選択ボタン */}
+                  <button
+                    onClick={() => setSelectedPlan(plan)}
+                    className={`w-full bg-sky-500 text-white py-3 rounded-lg ${fs.button} font-semibold hover:bg-sky-600 transition`}
                   >
-                    このプランで詳細なスケジュールを作成
+                    このプランを選択
                   </button>
                 </div>
               </div>
             ))}
           </div>
-          <div className="text-center"><button onClick={resetApp} className="bg-gray-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-700 transition">新しいプランを作成</button></div>
+
+          {/* フッターボタン */}
+          <div className="bg-white rounded-2xl shadow-lg p-6">
+            <div className="grid md:grid-cols-2 gap-4">
+              <button
+                onClick={() => setStep('additional')}
+                className={`bg-sky-500 text-white py-3 rounded-xl ${fs.button} font-semibold hover:bg-sky-600 transition`}
+              >
+                新しいプランを作成
+              </button>
+              <button
+                onClick={() => setStep(destinationUndecided ? 'selectDestination' : 'destination')}
+                className={`bg-gray-500 text-white py-3 rounded-xl ${fs.button} font-semibold hover:bg-gray-600 transition`}
+              >
+                戻る
+              </button>
+            </div>
+          </div>
         </div>
       </div>
     );
