@@ -1377,31 +1377,55 @@ if (step === 'group-setup') {
                               <p className="text-gray-700 leading-relaxed mb-3">{activity.description}</p>
 
                               {/* 食事・宿泊の候補表示 */}
-                              {activity.placeOptions && activity.placeOptions.length > 0 && (
-                                <div className="mt-4 space-y-3">
-                                  <h4 className="font-semibold text-gray-800 flex items-center gap-2">
-                                    <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                    おすすめの{activity.type === 'meal' ? 'レストラン' : 'ホテル'}
-                                  </h4>
-                                  <div className="space-y-2">
-                                    {activity.placeOptions.map((place, placeIndex) => (
-                                      <div key={placeIndex} className="bg-white border border-gray-200 rounded-lg p-3 hover:shadow-md transition">
-                                        <div className="flex items-start justify-between gap-2">
-                                          <div className="flex-1">
-                                            <h5 className="font-semibold text-gray-900">{place.name}</h5>
-                                            <p className="text-xs text-gray-500 mt-1">{place.address}</p>
-                                          </div>
-                                          <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-md flex-shrink-0">
-                                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                            <span className="font-semibold text-sm text-gray-800">{place.rating}</span>
-                                            <span className="text-xs text-gray-500">({place.userRatingsTotal})</span>
-                                          </div>
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
+                             {activity.placeOptions && activity.placeOptions.length > 0 && (
+  <div className="mt-4 space-y-3">
+    <h4 className="font-semibold text-gray-700 flex items-center gap-2">
+      <Star className="w-4 h-4 text-yellow-500" />
+      おすすめ候補
+    </h4>
+    {activity.placeOptions.map((place, idx) => (
+      <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition">
+        <div className="flex items-start justify-between mb-3">
+          <div className="flex-1">
+            <h5 className="font-semibold text-gray-800">{place.name}</h5>
+            <p className="text-sm text-gray-600 mt-1">{place.address}</p>
+            <div className="flex items-center gap-4 mt-2">
+              <div className="flex items-center gap-1">
+                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                <span className="text-sm font-semibold">{place.rating}</span>
+              </div>
+              <span className="text-sm text-gray-500">
+                ({place.userRatingsTotal}件のレビュー)
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        {/* リンクボタン */}
+        <div className="flex gap-2 mt-3">
+          <a
+            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.placeId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg text-sm font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2"
+          >
+            <MapPin className="w-4 h-4" />
+            Google Mapsで開く
+          </a>
+          <a
+            href={`https://www.google.com/search?q=${encodeURIComponent(place.name + ' ' + destination)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg text-sm font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2"
+          >
+            <Navigation className="w-4 h-4" />
+            Google検索
+          </a>
+        </div>
+      </div>
+    ))}
+  </div>
+)}
                             </div>
                           </div>
                         </div>
