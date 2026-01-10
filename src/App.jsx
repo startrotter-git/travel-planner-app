@@ -35,6 +35,8 @@ const TravelPlannerApp = () => {
   });
   const [detailedSchedule, setDetailedSchedule] = useState(null);
 
+  const [fontSize, setFontSize] = useState('medium'); // 'small', 'medium', 'large'
+
   // Render.comにデプロイしたAPIサーバーのURL
   const API_BASE_URL = 'https://travel-planner-api-ird5.onrender.com';
 
@@ -54,6 +56,32 @@ const TravelPlannerApp = () => {
   ];
 
   const getScoreLabel = (s) => ['', '1: 全くそう思わない', '2: あまりそう思わない', '3: どちらでもない', '4: ややそう思う', '5: とてもそう思う'][s];
+  const getFontSizeClasses = () => {
+    const sizes = {
+      small: {
+        text: 'text-sm',
+        heading: 'text-lg',
+        subheading: 'text-base',
+        label: 'text-xs',
+        button: 'text-sm'
+      },
+      medium: {
+        text: 'text-base',
+        heading: 'text-2xl',
+        subheading: 'text-lg',
+        label: 'text-sm',
+        button: 'text-base'
+      },
+      large: {
+        text: 'text-lg',
+        heading: 'text-3xl',
+        subheading: 'text-xl',
+        label: 'text-base',
+        button: 'text-lg'
+      }
+    };
+    return sizes[fontSize];
+  };
    const initializeTravelGroup = (type, count = 2) => {
     const members = [];
     
@@ -608,17 +636,66 @@ const resetApp = () => {
     setSelectedPlan(null);
     setDetailInfo({ departurePlace: '', departureTime: '', stayDuration: '標準（1時間）', transportPriority: [] });
     setDetailedSchedule(null);
+    setFontSize('medium');
   };
 
   // アクティビティタイプに応じたアイコンとカラーを返す関数
   const getActivityStyle = (type) => {
     const styles = {
-      departure: { icon: '🚀', color: 'blue', bg: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
-      travel: { icon: '🚗', color: 'purple', bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
-      activity: { icon: '🎯', color: 'green', bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
-      meal: { icon: '🍽️', color: 'orange', bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
-      accommodation: { icon: '🏨', color: 'pink', bg: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700' },
-      default: { icon: '📍', color: 'gray', bg: 'bg-gray-50', border: 'border-gray-200', text: 'text-gray-700' }
+      departure: { 
+        icon: '🚀', 
+        iconBg: 'bg-white', 
+        iconBorder: 'border-sky-400', 
+        iconText: 'text-sky-600',
+        cardBg: 'bg-white',
+        cardBorder: 'border-gray-200',
+        cardShadow: 'shadow-sm hover:shadow-md'
+      },
+      travel: { 
+        icon: '🚗', 
+        iconBg: 'bg-white', 
+        iconBorder: 'border-sky-400', 
+        iconText: 'text-sky-600',
+        cardBg: 'bg-white',
+        cardBorder: 'border-gray-200',
+        cardShadow: 'shadow-sm hover:shadow-md'
+      },
+      activity: { 
+        icon: '🎯', 
+        iconBg: 'bg-white', 
+        iconBorder: 'border-sky-400', 
+        iconText: 'text-sky-600',
+        cardBg: 'bg-white',
+        cardBorder: 'border-gray-200',
+        cardShadow: 'shadow-sm hover:shadow-md'
+      },
+      meal: { 
+        icon: '🍽️', 
+        iconBg: 'bg-white', 
+        iconBorder: 'border-sky-400', 
+        iconText: 'text-sky-600',
+        cardBg: 'bg-white',
+        cardBorder: 'border-gray-200',
+        cardShadow: 'shadow-sm hover:shadow-md'
+      },
+      accommodation: { 
+        icon: '🏨', 
+        iconBg: 'bg-white', 
+        iconBorder: 'border-sky-400', 
+        iconText: 'text-sky-600',
+        cardBg: 'bg-white',
+        cardBorder: 'border-gray-200',
+        cardShadow: 'shadow-sm hover:shadow-md'
+      },
+      default: { 
+        icon: '📍', 
+        iconBg: 'bg-white', 
+        iconBorder: 'border-gray-300', 
+        iconText: 'text-gray-600',
+        cardBg: 'bg-white',
+        cardBorder: 'border-gray-200',
+        cardShadow: 'shadow-sm hover:shadow-md'
+      }
     };
     return styles[type] || styles.default;
   };
@@ -1456,139 +1533,186 @@ if (step === 'group-setup') {
     );
   }
 
-  if (step === 'detailed-schedule' && detailedSchedule) {
+ if (step === 'detailed-schedule') {
+    const fs = getFontSizeClasses();
+    
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50 p-6">
         <div className="max-w-5xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6 text-center">
-            <Clock className="w-16 h-16 text-green-500 mx-auto mb-4" />
-            <h1 className="text-3xl font-bold mb-2">⏰ 詳細スケジュール</h1>
-            <div className="flex items-center justify-center gap-4 text-gray-600 flex-wrap">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-5 h-5" />
-                <span>{detailedSchedule.destination}</span>
+          {/* ヘッダー */}
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6">
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h1 className={`${fs.heading} font-bold text-gray-800`}>
+                  {detailedSchedule.destination}旅行スケジュール
+                </h1>
+                <p className={`${fs.text} text-gray-600 mt-2`}>
+                  テーマ: {detailedSchedule.theme}
+                </p>
               </div>
+              
+              {/* 文字サイズ選択 */}
               <div className="flex items-center gap-2">
-                <Compass className="w-5 h-5" />
-                <span>{detailedSchedule.theme}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-6 mb-6">
-            {detailedSchedule.days.map((day, dayIndex) => (
-              <div key={dayIndex} className="bg-white rounded-2xl shadow-xl overflow-hidden">
-                <div className={`p-6 text-white ${
-                  ['bg-gradient-to-r from-blue-500 to-indigo-600',
-                   'bg-gradient-to-r from-green-500 to-teal-600',
-                   'bg-gradient-to-r from-purple-500 to-pink-600'][dayIndex % 3]
-                }`}>
-                  <h2 className="text-2xl font-bold">📅 {day.date}</h2>
+                <span className={`${fs.label} text-gray-600`}>文字サイズ:</span>
+                <div className="flex gap-1 bg-gray-100 rounded-lg p-1">
+                  <button
+                    onClick={() => setFontSize('small')}
+                    className={`px-3 py-1 rounded ${fontSize === 'small' ? 'bg-white shadow-sm font-semibold' : 'text-gray-600'} transition`}
+                  >
+                    小
+                  </button>
+                  <button
+                    onClick={() => setFontSize('medium')}
+                    className={`px-3 py-1 rounded ${fontSize === 'medium' ? 'bg-white shadow-sm font-semibold' : 'text-gray-600'} transition`}
+                  >
+                    中
+                  </button>
+                  <button
+                    onClick={() => setFontSize('large')}
+                    className={`px-3 py-1 rounded ${fontSize === 'large' ? 'bg-white shadow-sm font-semibold' : 'text-gray-600'} transition`}
+                  >
+                    大
+                  </button>
                 </div>
-
-                <div className="p-6">
-                  <div className="space-y-4">
-                    {day.activities.map((activity, actIndex) => {
-                      const style = getActivityStyle(activity.type);
-                      return (
-                        <div key={actIndex} className={`border-2 ${style.border} ${style.bg} rounded-xl p-5 transition hover:shadow-md`}>
-                          <div className="flex items-start gap-4">
-                            <div className="flex-shrink-0">
-                              <div className={`w-16 h-16 rounded-full ${style.bg} border-2 ${style.border} flex items-center justify-center text-2xl`}>
-                                {style.icon}
-                              </div>
-                            </div>
-                            
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-                                <div>
-                                  <span className={`text-2xl font-bold ${style.text}`}>{activity.time}</span>
-                                  <span className="ml-3 text-sm text-gray-500">({activity.duration})</span>
-                                </div>
-                                {activity.transportation && (
-                                  <span className="px-3 py-1 bg-white border border-gray-300 rounded-full text-sm font-medium text-gray-700">
-                                    {activity.transportation}
-                                  </span>
-                                )}
-                              </div>
-                              
-                              <h3 className={`text-xl font-bold mb-2 ${style.text}`}>{activity.title}</h3>
-                              <p className="text-gray-700 leading-relaxed mb-3">{activity.description}</p>
-
-                              {/* 食事・宿泊の候補表示 */}
-                             {activity.placeOptions && activity.placeOptions.length > 0 && (
-  <div className="mt-4 space-y-3">
-    <h4 className="font-semibold text-gray-700 flex items-center gap-2">
-      <Star className="w-4 h-4 text-yellow-500" />
-      おすすめ候補
-    </h4>
-    {activity.placeOptions.map((place, idx) => (
-      <div key={idx} className="bg-white p-4 rounded-lg border border-gray-200 hover:border-blue-300 transition">
-        <div className="flex items-start justify-between mb-3">
-          <div className="flex-1">
-            <h5 className="font-semibold text-gray-800">{place.name}</h5>
-            <p className="text-sm text-gray-600 mt-1">{place.address}</p>
-            <div className="flex items-center gap-4 mt-2">
-              <div className="flex items-center gap-1">
-                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                <span className="text-sm font-semibold">{place.rating}</span>
               </div>
-              <span className="text-sm text-gray-500">
-                ({place.userRatingsTotal}件のレビュー)
-              </span>
             </div>
           </div>
-        </div>
-        
-        {/* リンクボタン */}
-        <div className="flex gap-2 mt-3">
-          <a
-            href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.placeId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 bg-blue-500 text-white py-2 px-4 rounded-lg text-sm font-semibold hover:bg-blue-600 transition flex items-center justify-center gap-2"
-          >
-            <MapPin className="w-4 h-4" />
-            Google Mapsで開く
-          </a>
-          <a
-            href={`https://www.google.com/search?q=${encodeURIComponent(place.name + ' ' + destination)}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg text-sm font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2"
-          >
-            <Navigation className="w-4 h-4" />
-            Google検索
-          </a>
-        </div>
-      </div>
-    ))}
-  </div>
-)}
-                            </div>
+
+          {/* タイムライン形式のスケジュール */}
+          {detailedSchedule.days.map((day, dayIdx) => (
+            <div key={dayIdx} className="mb-8">
+              {/* 日付ヘッダー */}
+              <div className="bg-white rounded-xl shadow-md p-6 mb-6">
+                <h2 className={`${fs.heading} font-bold text-gray-800`}>
+                  {day.day}日目
+                </h2>
+                <p className={`${fs.label} text-gray-500 mt-1`}>{day.date}</p>
+              </div>
+
+              {/* タイムライン */}
+              <div className="relative">
+                {/* 垂直の点線（水色） */}
+                <div className="absolute left-12 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-sky-300"></div>
+
+                {/* アクティビティカード */}
+                <div className="space-y-6">
+                  {day.activities.map((activity, actIdx) => {
+                    const style = getActivityStyle(activity.type);
+                    
+                    return (
+                      <div key={actIdx} className="relative pl-24">
+                        {/* 時刻表示（左側） */}
+                        <div className="absolute left-0 top-0 w-20 text-right">
+                          <div className={`${fs.subheading} font-bold text-sky-600`}>
+                            {activity.time}
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        {/* アイコン（点線上） */}
+                        <div className={`absolute left-8 top-2 w-8 h-8 rounded-full ${style.iconBg} border-2 ${style.iconBorder} flex items-center justify-center shadow-sm z-10`}>
+                          <span className="text-lg">{style.icon}</span>
+                        </div>
+
+                        {/* カード */}
+                        <div className={`${style.cardBg} ${style.cardShadow} rounded-xl border ${style.cardBorder} p-6 transition-all hover:-translate-y-1`}>
+                          {/* カード上部 */}
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1">
+                              <h3 className={`${fs.subheading} font-bold text-gray-800 mb-1`}>
+                                {activity.title}
+                              </h3>
+                              <p className={`${fs.text} text-gray-600`}>
+                                {activity.description}
+                              </p>
+                            </div>
+                            {activity.duration && (
+                              <div className={`ml-4 px-3 py-1 bg-sky-50 rounded-full ${fs.label} text-sky-700 font-medium whitespace-nowrap`}>
+                                {activity.duration}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 交通手段 */}
+                          {activity.transportation && (
+                            <div className={`mt-2 ${fs.label} text-gray-500`}>
+                              🚆 {activity.transportation}
+                            </div>
+                          )}
+
+                          {/* レストラン・ホテル候補 */}
+                          {activity.placeOptions && activity.placeOptions.length > 0 && (
+                            <div className="mt-4 space-y-3 pt-4 border-t border-gray-100">
+                              <h4 className={`${fs.subheading} font-semibold text-gray-700 flex items-center gap-2`}>
+                                <Star className="w-4 h-4 text-yellow-500" />
+                                おすすめ候補
+                              </h4>
+                              {activity.placeOptions.map((place, idx) => (
+                                <div key={idx} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-sky-300 transition">
+                                  <div className="flex items-start justify-between mb-3">
+                                    <div className="flex-1">
+                                      <h5 className={`${fs.text} font-semibold text-gray-800`}>{place.name}</h5>
+                                      <p className={`${fs.label} text-gray-600 mt-1`}>{place.address}</p>
+                                      <div className="flex items-center gap-4 mt-2">
+                                        <div className="flex items-center gap-1">
+                                          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                          <span className={`${fs.label} font-semibold`}>{place.rating}</span>
+                                        </div>
+                                        <span className={`${fs.label} text-gray-500`}>
+                                          ({place.userRatingsTotal}件のレビュー)
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex gap-2 mt-3">
+                                    <a
+                                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.placeId}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`flex-1 bg-sky-500 text-white py-2 px-4 rounded-lg ${fs.button} font-semibold hover:bg-sky-600 transition flex items-center justify-center gap-2`}
+                                    >
+                                      <MapPin className="w-4 h-4" />
+                                      Google Mapsで開く
+                                    </a>
+                                    <a
+                                      href={`https://www.google.com/search?q=${encodeURIComponent(place.name + ' ' + detailedSchedule.destination)}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className={`flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg ${fs.button} font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2`}
+                                    >
+                                      <Navigation className="w-4 h-4" />
+                                      Google検索
+                                    </a>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <button
-              onClick={() => setStep('results')}
-              className="bg-gray-500 text-white py-4 rounded-xl font-semibold hover:bg-gray-600 transition"
-            >
-              プラン一覧に戻る
-            </button>
-            <button
-              onClick={resetApp}
-              className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white py-4 rounded-xl font-semibold hover:from-blue-600 hover:to-indigo-700 transition"
-            >
-              新しいプランを作成
-            </button>
+          {/* フッターボタン */}
+          <div className="bg-white rounded-2xl shadow-lg p-6 mt-8">
+            <div className="flex gap-4">
+              <button
+                onClick={() => setStep('detail-input')}
+                className={`flex-1 bg-gray-500 text-white py-3 rounded-xl ${fs.button} font-semibold hover:bg-gray-600 transition`}
+              >
+                スケジュールを再作成
+              </button>
+              <button
+                onClick={resetApp}
+                className={`flex-1 bg-sky-500 text-white py-3 rounded-xl ${fs.button} font-semibold hover:bg-sky-600 transition`}
+              >
+                最初から作成
+              </button>
+            </div>
           </div>
         </div>
       </div>
