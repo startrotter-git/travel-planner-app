@@ -82,6 +82,34 @@ const TravelPlannerApp = () => {
     };
     return sizes[fontSize];
   };
+  const FontSizeSelector = () => {
+    const fs = getFontSizeClasses();
+    return (
+      <div className="flex items-center gap-2">
+        <span className={`${fs.label} text-gray-600`}>文字:</span>
+        <div className="flex gap-1 bg-white/80 rounded-lg p-1 shadow-sm">
+          <button
+            onClick={() => setFontSize('small')}
+            className={`px-3 py-1 rounded ${fontSize === 'small' ? 'bg-sky-500 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'} transition`}
+          >
+            小
+          </button>
+          <button
+            onClick={() => setFontSize('medium')}
+            className={`px-3 py-1 rounded ${fontSize === 'medium' ? 'bg-sky-500 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'} transition`}
+          >
+            中
+          </button>
+          <button
+            onClick={() => setFontSize('large')}
+            className={`px-3 py-1 rounded ${fontSize === 'large' ? 'bg-sky-500 text-white shadow-sm' : 'text-gray-600 hover:bg-gray-100'} transition`}
+          >
+            大
+          </button>
+        </div>
+      </div>
+    );
+  };
    const initializeTravelGroup = (type, count = 2) => {
     const members = [];
     
@@ -160,6 +188,7 @@ const TravelPlannerApp = () => {
         })
       });
 
+
       const data = await response.json();
       console.log('Directions API response:', data);
       
@@ -219,7 +248,11 @@ const TravelPlannerApp = () => {
       return null;
     }
   };
-
+const getPlaceImage = (placeName, destination) => {
+    // Unsplash Source API（著作権フリー、クレジット不要）
+    const query = encodeURIComponent(`${destination} ${placeName} japan`);
+    return `https://source.unsplash.com/800x400/?${query}`;
+  };
   const recommendDestinations = async () => {
     setLoading(true);
     setStep('loading');
@@ -641,73 +674,43 @@ const resetApp = () => {
 
   // アクティビティタイプに応じたアイコンとカラーを返す関数
   const getActivityStyle = (type) => {
-    const styles = {
-      departure: { 
-        icon: '🚀', 
-        iconBg: 'bg-white', 
-        iconBorder: 'border-sky-400', 
-        iconText: 'text-sky-600',
-        cardBg: 'bg-white',
-        cardBorder: 'border-gray-200',
-        cardShadow: 'shadow-sm hover:shadow-md'
-      },
-      travel: { 
-        icon: '🚗', 
-        iconBg: 'bg-white', 
-        iconBorder: 'border-sky-400', 
-        iconText: 'text-sky-600',
-        cardBg: 'bg-white',
-        cardBorder: 'border-gray-200',
-        cardShadow: 'shadow-sm hover:shadow-md'
-      },
-      activity: { 
-        icon: '🎯', 
-        iconBg: 'bg-white', 
-        iconBorder: 'border-sky-400', 
-        iconText: 'text-sky-600',
-        cardBg: 'bg-white',
-        cardBorder: 'border-gray-200',
-        cardShadow: 'shadow-sm hover:shadow-md'
-      },
-      meal: { 
-        icon: '🍽️', 
-        iconBg: 'bg-white', 
-        iconBorder: 'border-sky-400', 
-        iconText: 'text-sky-600',
-        cardBg: 'bg-white',
-        cardBorder: 'border-gray-200',
-        cardShadow: 'shadow-sm hover:shadow-md'
-      },
-      accommodation: { 
-        icon: '🏨', 
-        iconBg: 'bg-white', 
-        iconBorder: 'border-sky-400', 
-        iconText: 'text-sky-600',
-        cardBg: 'bg-white',
-        cardBorder: 'border-gray-200',
-        cardShadow: 'shadow-sm hover:shadow-md'
-      },
-      default: { 
-        icon: '📍', 
-        iconBg: 'bg-white', 
-        iconBorder: 'border-gray-300', 
-        iconText: 'text-gray-600',
-        cardBg: 'bg-white',
-        cardBorder: 'border-gray-200',
-        cardShadow: 'shadow-sm hover:shadow-md'
-      }
+    const baseStyle = {
+      iconBg: 'bg-white', 
+      iconBorder: 'border-sky-400', 
+      cardBg: 'bg-white',
+      cardBorder: 'border-gray-200',
+      cardShadow: 'shadow-sm hover:shadow-md'
     };
-    return styles[type] || styles.default;
+
+    const icons = {
+      departure: <Navigation className="w-5 h-5 text-sky-600" />,
+      travel: <MapPin className="w-5 h-5 text-sky-600" />,
+      activity: <Compass className="w-5 h-5 text-sky-600" />,
+      meal: <Utensils className="w-5 h-5 text-sky-600" />,
+      accommodation: <Heart className="w-5 h-5 text-sky-600" />,
+      default: <Clock className="w-5 h-5 text-gray-600" />
+    };
+
+    return {
+      ...baseStyle,
+      iconComponent: icons[type] || icons.default
+    };
   };
 
   if (step === 'intro') {
+    const fs = getFontSizeClasses();
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 flex items-center justify-center">
-        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-2xl p-8">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-sky-50 p-6 flex items-center justify-center">
+        <div className="max-w-2xl w-full bg-white rounded-2xl shadow-lg p-8">
+          {/* 文字サイズ選択 */}
+          <div className="flex justify-end mb-6">
+            <FontSizeSelector />
+          </div>
+          
           <div className="text-center mb-8">
             <Heart className="w-16 h-16 text-pink-500 mx-auto mb-4" />
-            <h1 className="text-4xl font-bold text-gray-800 mb-4">お二人の旅行プランナー</h1>
-            <p className="text-gray-600 text-lg">お二人の好みに合わせた、最高の旅行プランを作成します</p>
+           <h1 className={`${fs.heading} font-bold text-gray-800 mb-4`}>旅行プランナー</h1>
+            <p className={`${fs.text} text-gray-600`}>あなたにぴったりの旅行プランを作成します</p>
           </div>
           <div className="space-y-4 mb-8">
             <div className="bg-blue-50 p-4 rounded-xl">
@@ -1025,38 +1028,47 @@ if (step === 'group-setup') {
     );
   }
 
-  if (step === 'questions') {
+if (step === 'questions') {
     const currentMember = travelGroup.members[currentMemberIndex];
     const currentAnswers = memberAnswers[currentMemberIndex] || {};
     const allAnswered = questions.every(q => currentAnswers[q.id] !== undefined);
     const isLastMember = currentMemberIndex === travelGroup.members.length - 1;
+    const fs = getFontSizeClasses();
 
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-sky-50 p-6">
         <div className="max-w-3xl mx-auto">
-          <div className="bg-white rounded-2xl shadow-2xl p-8 mb-6 sticky top-6 z-10">
+          {/* ヘッダー */}
+          <div className="bg-white rounded-2xl shadow-lg p-8 mb-6 sticky top-6 z-10">
             <div className="flex items-center justify-between mb-4">
-              <div>
-                <h2 className="text-2xl font-bold text-gray-800">
+              <div className="flex-1">
+                <h2 className={`${fs.heading} font-bold text-gray-800`}>
                   {currentMember.name}の好みを教えてください
                 </h2>
-                <p className="text-gray-600 mt-1">
+                <p className={`${fs.text} text-gray-600 mt-1`}>
                   {currentMember.ageGroup} | メンバー {currentMemberIndex + 1}/{travelGroup.members.length}
                 </p>
               </div>
-              <div className="text-right">
-                <div className="text-sm text-gray-500">質問</div>
-                <div className="text-2xl font-bold text-blue-600">{Object.keys(currentAnswers).length}/{questions.length}</div>
+              
+              <div className="flex items-center gap-4">
+                <div className="text-right">
+                  <div className={`${fs.label} text-gray-500`}>質問</div>
+                  <div className={`${fs.heading} font-bold text-sky-600`}>
+                    {Object.keys(currentAnswers).length}/{questions.length}
+                  </div>
+                </div>
+                <FontSizeSelector />
               </div>
             </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div 
-                className="bg-gradient-to-r from-blue-500 to-indigo-600 h-2 rounded-full transition-all duration-300"
+                className="bg-sky-500 h-2 rounded-full transition-all duration-300"
                 style={{ width: `${(Object.keys(currentAnswers).length / questions.length) * 100}%` }}
               />
             </div>
           </div>
 
+          {/* 質問カード */}
           <div className="space-y-6 mb-24">
             {questions.map((q, idx) => {
               const answered = currentAnswers[q.id] !== undefined;
@@ -1064,15 +1076,15 @@ if (step === 'group-setup') {
                 <div 
                   key={q.id}
                   id={`question-${idx}`}
-                  className={`bg-white rounded-2xl shadow-xl p-6 transition-all duration-300 ${
-                    answered ? 'opacity-60' : 'opacity-100'
+                  className={`bg-white rounded-2xl shadow-md p-6 transition-all duration-300 border-2 ${
+                    answered ? 'border-sky-200 opacity-80' : 'border-transparent'
                   }`}
                 >
                   <div className="flex items-start gap-4 mb-4">
-                    <div className="text-blue-500 mt-1">{q.icon}</div>
+                    <div className="text-sky-500 mt-1">{q.icon}</div>
                     <div className="flex-1">
-                      <h3 className="text-xl font-bold text-gray-800 mb-2">{q.question}</h3>
-                      <p className="text-gray-600 text-sm">{q.description}</p>
+                      <h3 className={`${fs.subheading} font-bold text-gray-800 mb-2`}>{q.question}</h3>
+                      <p className={`${fs.text} text-gray-600`}>{q.description}</p>
                     </div>
                   </div>
                   
@@ -1090,19 +1102,19 @@ if (step === 'group-setup') {
                         }}
                         className={`w-full p-4 rounded-xl border-2 transition text-left ${
                           currentAnswers[q.id] === score
-                            ? 'border-blue-500 bg-blue-50 text-blue-700 font-semibold'
-                            : 'border-gray-200 hover:border-blue-300 text-gray-700'
+                            ? 'border-sky-500 bg-sky-50 text-sky-700 shadow-md'
+                            : 'border-gray-200 hover:border-sky-300 hover:bg-sky-50/50 text-gray-700'
                         }`}
                       >
-                        <span className="font-bold mr-2">{score}</span>
-                        {q.scaleLabels[score - 1]}
+                        <span className={`${fs.text} font-bold mr-2`}>{score}</span>
+                        <span className={fs.text}>{q.scaleLabels[score - 1]}</span>
                       </button>
                     ))}
                   </div>
 
                   {answered && (
-                    <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-                      <p className="text-sm text-green-700">
+                    <div className="mt-4 p-3 bg-sky-50 border border-sky-200 rounded-lg">
+                      <p className={`${fs.label} text-sky-700`}>
                         ✓ 回答済み: {getScoreLabel(currentAnswers[q.id])}
                       </p>
                     </div>
@@ -1112,9 +1124,10 @@ if (step === 'group-setup') {
             })}
           </div>
 
+          {/* 次へボタン */}
           {allAnswered && (
             <div className="fixed bottom-6 left-0 right-0 px-6 max-w-3xl mx-auto">
-             <button
+              <button
                 onClick={() => {
                   if (!isLastMember) {
                     setCurrentMemberIndex(currentMemberIndex + 1);
@@ -1124,7 +1137,7 @@ if (step === 'group-setup') {
                     setStep('member-complete');
                   }
                 }}
-                className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-4 rounded-xl font-semibold text-lg shadow-2xl hover:from-green-600 hover:to-teal-700 transition"
+                className={`w-full bg-sky-500 text-white py-4 rounded-xl ${fs.button} font-semibold shadow-2xl hover:bg-sky-600 transition`}
               >
                 {!isLastMember ? `次へ：${travelGroup.members[currentMemberIndex + 1].name}の回答` : '回答完了'}
               </button>
@@ -1592,31 +1605,74 @@ if (step === 'group-setup') {
               {/* タイムライン */}
               <div className="relative">
                 {/* 垂直の点線（水色） */}
-                <div className="absolute left-12 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-sky-300"></div>
-
+                 <div className="absolute left-24 top-0 bottom-0 w-0.5 border-l-2 border-dashed border-sky-300"></div>
                 {/* アクティビティカード */}
                 <div className="space-y-6">
                   {day.activities.map((activity, actIdx) => {
                     const style = getActivityStyle(activity.type);
                     
                     return (
-                      <div key={actIdx} className="relative pl-24">
+                      <<div key={actIdx} className="relative pl-28">
                         {/* 時刻表示（左側） */}
-                        <div className="absolute left-0 top-0 w-20 text-right">
-                          <div className={`${fs.subheading} font-bold text-sky-600`}>
+                        <div className="absolute left-0 top-1 w-16 text-right">
+                          <div className={`${fs.label} font-bold text-gray-500`}>
                             {activity.time}
                           </div>
                         </div>
 
                         {/* アイコン（点線上） */}
-                        <div className={`absolute left-8 top-2 w-8 h-8 rounded-full ${style.iconBg} border-2 ${style.iconBorder} flex items-center justify-center shadow-sm z-10`}>
-                          <span className="text-lg">{style.icon}</span>
+                        <div className={`absolute left-20 top-0 w-10 h-10 rounded-full ${style.iconBg} border-2 ${style.iconBorder} flex items-center justify-center shadow-md z-10`}>
+                          {style.iconComponent}
                         </div>
 
                         {/* カード */}
-                        <div className={`${style.cardBg} ${style.cardShadow} rounded-xl border ${style.cardBorder} p-6 transition-all hover:-translate-y-1`}>
+                        <div className={`${style.cardBg} ${style.cardShadow} rounded-xl border ${style.cardBorder} overflow-hidden transition-all hover:-translate-y-1`}>
+                          {/* 画像（観光アクティビティのみ） */}
+                          {activity.type === 'activity' && (
+                            <div className="relative h-48 bg-gradient-to-br from-sky-100 to-blue-100">
+                              <img 
+                                src={getPlaceImage(activity.title, detailedSchedule.destination)}
+                                alt={activity.title}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // 画像読み込み失敗時はグラデーション背景のまま
+                                  e.target.style.display = 'none';
+                                }}
+                              />
+                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-4">
+                                <h3 className={`${fs.subheading} font-bold text-white`}>
+                                  {activity.title}
+                                </h3>
+                              </div>
+                            </div>
+                          )}
+
+                       <div className="p-6">
                           {/* カード上部 */}
-                          <div className="flex items-start justify-between mb-3">
+                         div className="flex items-start justify-between mb-3">
+                         {activity.type !== 'activity' && (
+                        <div className="flex-1">
+      　　　　　　　　　　　　　　　<h3 className={`${fs.subheading} font-bold text-gray-800 mb-1`}>
+                       {activity.title}
+                     </h3>
+                      <p className={`${fs.text} text-gray-600`}>
+                        {activity.description}
+                      </p>
+                    </div>
+                      )}
+                           {activity.type === 'activity' && (
+                        <div className="flex-1">
+                          <p className={`${fs.text} text-gray-600`}>
+                            {activity.description}
+                          </p>
+                        </div>
+                      )}
+                           {activity.duration && (
+                        <div className={`ml-4 px-3 py-1 bg-sky-50 rounded-full ${fs.label} text-sky-700 font-medium whitespace-nowrap`}>
+                          {activity.duration}
+                        </div>
+                      )}
+                       </div>
                             <div className="flex-1">
                               <h3 className={`${fs.subheading} font-bold text-gray-800 mb-1`}>
                                 {activity.title}
@@ -1690,6 +1746,7 @@ if (step === 'group-setup') {
                           )}
                         </div>
                       </div>
+                     </div>   
                     );
                   })}
                 </div>
