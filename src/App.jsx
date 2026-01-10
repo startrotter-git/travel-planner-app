@@ -91,7 +91,33 @@ const TravelPlannerApp = () => {
         })
       });
 
-      const getRouteInfo = async (origin, destination, departureTime) => {
+      const data = await response.json();
+      console.log('Search results:', data);
+      
+      if (data.status === 'OK' && data.results) {
+        // 評価順にソートして上位3件を返す
+        const filteredResults = data.results
+          .filter(place => place.rating && place.rating >= 3.5)
+          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
+          .slice(0, 3)
+          .map(place => ({
+            name: place.name,
+            rating: place.rating,
+            userRatingsTotal: place.user_ratings_total,
+            address: place.formatted_address,
+            placeId: place.place_id
+          }));
+        
+        console.log('Filtered results:', filteredResults);
+        return filteredResults;
+      }
+      return [];
+    } catch (error) {
+      console.error('Places search error:', error);
+      return [];
+    }
+  };
+   const getRouteInfo = async (origin, destination, departureTime) => {
     try {
       console.log(`Getting route from ${origin} to ${destination}`);
       
@@ -163,33 +189,6 @@ const TravelPlannerApp = () => {
     } catch (error) {
       console.error('Route info error:', error);
       return null;
-    }
-  };
-
-      const data = await response.json();
-      console.log('Search results:', data);
-      
-      if (data.status === 'OK' && data.results) {
-        // 評価順にソートして上位3件を返す
-        const filteredResults = data.results
-          .filter(place => place.rating && place.rating >= 3.5)
-          .sort((a, b) => (b.rating || 0) - (a.rating || 0))
-          .slice(0, 3)
-          .map(place => ({
-            name: place.name,
-            rating: place.rating,
-            userRatingsTotal: place.user_ratings_total,
-            address: place.formatted_address,
-            placeId: place.place_id
-          }));
-        
-        console.log('Filtered results:', filteredResults);
-        return filteredResults;
-      }
-      return [];
-    } catch (error) {
-      console.error('Places search error:', error);
-      return [];
     }
   };
 
