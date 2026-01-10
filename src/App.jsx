@@ -1609,146 +1609,132 @@ if (step === 'questions') {
                 {/* アクティビティカード */}
                 <div className="space-y-6">
                   {day.activities.map((activity, actIdx) => {
-                    const style = getActivityStyle(activity.type);
-                    
-                    return (
-                      <div key={actIdx} className="relative pl-28">
-                        {/* 時刻表示（左側） */}
-                        <div className="absolute left-0 top-1 w-16 text-right">
-                          <div className={`${fs.label} font-bold text-gray-500`}>
-                            {activity.time}
-                          </div>
-                        </div>
+  const style = getActivityStyle(activity.type);
+  
+  return (
+    <div key={actIdx} className="relative pl-28">
+      {/* 時刻表示（左側） */}
+      <div className="absolute left-0 top-1 w-16 text-right">
+        <div className={`${fs.label} font-bold text-gray-500`}>
+          {activity.time}
+        </div>
+      </div>
 
-                        {/* アイコン（点線上） */}
-                        <div className={`absolute left-20 top-0 w-10 h-10 rounded-full ${style.iconBg} border-2 ${style.iconBorder} flex items-center justify-center shadow-md z-10`}>
-                          {style.iconComponent}
-                        </div>
+      {/* アイコン（点線上） */}
+      <div className={`absolute left-20 top-0 w-10 h-10 rounded-full ${style.iconBg} border-2 ${style.iconBorder} flex items-center justify-center shadow-md z-10`}>
+        {style.iconComponent}
+      </div>
 
-                        {/* カード */} 
-                        <div className={`${style.cardBg} ${style.cardShadow} rounded-xl border ${style.cardBorder} overflow-hidden transition-all hover:-translate-y-1`}>
-                          {/* 画像（観光アクティビティのみ） */}
-                          {activity.type === 'activity' && (
-                            <div className="relative h-48 bg-gradient-to-br from-sky-100 to-blue-100">
-                              <img 
-                                src={getPlaceImage(activity.title, detailedSchedule.destination)}
-                                alt={activity.title}
-                                className="w-full h-full object-cover"
-                                onError={(e) => {
-                                  // 画像読み込み失敗時はグラデーション背景のまま
-                                  e.target.style.display = 'none';
-                                }}
-                              />
-                              <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-4">
-                                <h3 className={`${fs.subheading} font-bold text-white`}>
-                                  {activity.title}
-                                </h3>
-                              </div>
-                            </div>
-                          )}
+      {/* カード */}
+      <div className={`${style.cardBg} ${style.cardShadow} rounded-xl border ${style.cardBorder} overflow-hidden transition-all hover:-translate-y-1`}>
+        {/* 画像（観光アクティビティのみ） */}
+        {activity.type === 'activity' && (
+          <div className="relative h-48 bg-gradient-to-br from-sky-100 to-blue-100">
+            <img 
+              src={getPlaceImage(activity.title, detailedSchedule.destination)}
+              alt={activity.title}
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.style.display = 'none';
+              }}
+            />
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-4">
+              <h3 className={`${fs.subheading} font-bold text-white`}>
+                {activity.title}
+              </h3>
+            </div>
+          </div>
+        )}
+        
+        {/* カード内容 */}
+        <div className="p-6">
+          {/* カード上部 */}
+          <div className="flex items-start justify-between mb-3">
+            {activity.type !== 'activity' && (
+              <div className="flex-1">
+                <h3 className={`${fs.subheading} font-bold text-gray-800 mb-1`}>
+                  {activity.title}
+                </h3>
+                <p className={`${fs.text} text-gray-600`}>
+                  {activity.description}
+                </p>
+              </div>
+            )}
+            {activity.type === 'activity' && (
+              <div className="flex-1">
+                <p className={`${fs.text} text-gray-600`}>
+                  {activity.description}
+                </p>
+              </div>
+            )}
+            {activity.duration && (
+              <div className={`ml-4 px-3 py-1 bg-sky-50 rounded-full ${fs.label} text-sky-700 font-medium whitespace-nowrap`}>
+                {activity.duration}
+              </div>
+            )}
+          </div>
 
-                       <div className="p-6">
-                          {/* カード上部 */}
-                         div className="flex items-start justify-between mb-3">
-                         {activity.type !== 'activity' && (
-                        <div className="flex-1">
-      　　　　　　　　　　　　　　　<h3 className={`${fs.subheading} font-bold text-gray-800 mb-1`}>
-                       {activity.title}
-                     </h3>
-                      <p className={`${fs.text} text-gray-600`}>
-                        {activity.description}
-                      </p>
-                    </div>
-                      )}
-                           {activity.type === 'activity' && (
-                        <div className="flex-1">
-                          <p className={`${fs.text} text-gray-600`}>
-                            {activity.description}
-                          </p>
-                        </div>
-                      )}
-                           {activity.duration && (
-                        <div className={`ml-4 px-3 py-1 bg-sky-50 rounded-full ${fs.label} text-sky-700 font-medium whitespace-nowrap`}>
-                          {activity.duration}
-                        </div>
-                      )}
-                       </div>
-                            <div className="flex-1">
-                              <h3 className={`${fs.subheading} font-bold text-gray-800 mb-1`}>
-                                {activity.title}
-                              </h3>
-                              <p className={`${fs.text} text-gray-600`}>
-                                {activity.description}
-                              </p>
-                            </div>
-                            {activity.duration && (
-                              <div className={`ml-4 px-3 py-1 bg-sky-50 rounded-full ${fs.label} text-sky-700 font-medium whitespace-nowrap`}>
-                                {activity.duration}
-                              </div>
-                            )}
-                          </div>
+          {/* 交通手段 */}
+          {activity.transportation && (
+            <div className={`mt-2 ${fs.label} text-gray-500`}>
+              🚆 {activity.transportation}
+            </div>
+          )}
 
-                          {/* 交通手段 */}
-                          {activity.transportation && (
-                            <div className={`mt-2 ${fs.label} text-gray-500`}>
-                              🚆 {activity.transportation}
-                            </div>
-                          )}
-
-                          {/* レストラン・ホテル候補 */}
-                          {activity.placeOptions && activity.placeOptions.length > 0 && (
-                            <div className="mt-4 space-y-3 pt-4 border-t border-gray-100">
-                              <h4 className={`${fs.subheading} font-semibold text-gray-700 flex items-center gap-2`}>
-                                <Star className="w-4 h-4 text-yellow-500" />
-                                おすすめ候補
-                              </h4>
-                              {activity.placeOptions.map((place, idx) => (
-                                <div key={idx} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-sky-300 transition">
-                                  <div className="flex items-start justify-between mb-3">
-                                    <div className="flex-1">
-                                      <h5 className={`${fs.text} font-semibold text-gray-800`}>{place.name}</h5>
-                                      <p className={`${fs.label} text-gray-600 mt-1`}>{place.address}</p>
-                                      <div className="flex items-center gap-4 mt-2">
-                                        <div className="flex items-center gap-1">
-                                          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                                          <span className={`${fs.label} font-semibold`}>{place.rating}</span>
-                                        </div>
-                                        <span className={`${fs.label} text-gray-500`}>
-                                          ({place.userRatingsTotal}件のレビュー)
-                                        </span>
-                                      </div>
-                                    </div>
-                                  </div>
-                                  
-                                  <div className="flex gap-2 mt-3">
-                                    <a
-                                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.placeId}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={`flex-1 bg-sky-500 text-white py-2 px-4 rounded-lg ${fs.button} font-semibold hover:bg-sky-600 transition flex items-center justify-center gap-2`}
-                                    >
-                                      <MapPin className="w-4 h-4" />
-                                      Google Mapsで開く
-                                    </a>
-                                    <a
-                                      href={`https://www.google.com/search?q=${encodeURIComponent(place.name + ' ' + detailedSchedule.destination)}`}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className={`flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg ${fs.button} font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2`}
-                                    >
-                                      <Navigation className="w-4 h-4" />
-                                      Google検索
-                                    </a>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
+          {/* レストラン・ホテル候補 */}
+          {activity.placeOptions && activity.placeOptions.length > 0 && (
+            <div className="mt-4 space-y-3 pt-4 border-t border-gray-100">
+              <h4 className={`${fs.subheading} font-semibold text-gray-700 flex items-center gap-2`}>
+                <Star className="w-4 h-4 text-yellow-500" />
+                おすすめ候補
+              </h4>
+              {activity.placeOptions.map((place, idx) => (
+                <div key={idx} className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:border-sky-300 transition">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex-1">
+                      <h5 className={`${fs.text} font-semibold text-gray-800`}>{place.name}</h5>
+                      <p className={`${fs.label} text-gray-600 mt-1`}>{place.address}</p>
+                      <div className="flex items-center gap-4 mt-2">
+                        <div className="flex items-center gap-1">
+                          <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                          <span className={`${fs.label} font-semibold`}>{place.rating}</span>
                         </div>
+                        <span className={`${fs.label} text-gray-500`}>
+                          ({place.userRatingsTotal}件のレビュー)
+                        </span>
                       </div>
-                     </div>   
-                    );
-                  })}
+                    </div>
+                  </div>
+                  
+                  <div className="flex gap-2 mt-3">
+                    <a
+                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name)}&query_place_id=${place.placeId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex-1 bg-sky-500 text-white py-2 px-4 rounded-lg ${fs.button} font-semibold hover:bg-sky-600 transition flex items-center justify-center gap-2`}
+                    >
+                      <MapPin className="w-4 h-4" />
+                      Google Mapsで開く
+                    </a>
+                    <a
+                      href={`https://www.google.com/search?q=${encodeURIComponent(place.name + ' ' + detailedSchedule.destination)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`flex-1 bg-gray-500 text-white py-2 px-4 rounded-lg ${fs.button} font-semibold hover:bg-gray-600 transition flex items-center justify-center gap-2`}
+                    >
+                      <Navigation className="w-4 h-4" />
+                      Google検索
+                    </a>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+})}
                 </div>
               </div>
             </div>
