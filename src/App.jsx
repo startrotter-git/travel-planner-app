@@ -91,6 +91,81 @@ const TravelPlannerApp = () => {
         })
       });
 
+      const getRouteInfo = async (origin, destination, departureTime) => {
+    try {
+      console.log(`Getting route from ${origin} to ${destination}`);
+      
+      const response = await fetch(`${API_BASE_URL}/api/directions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          origin,
+          destination,
+          mode: 'transit',
+          departure_time: departureTime
+        })
+      });
+
+      const data = await response.json();
+      console.log('Directions API response:', data);
+      
+      if (data.status === 'OK' && data.routes && data.routes.length > 0) {
+        const route = data.routes[0];
+        const leg = route.legs[0];
+        
+        // 移動ステップを抽出
+        const steps = leg.steps.map(step => {
+          let transportMode = '徒歩';
+          let transportDetails = '';
+          
+          if (step.travel_mode === 'TRANSIT') {
+            const transit = step.transit_details;
+            if (transit) {
+              // 路線名を取得（例: JR東海道新幹線）
+              transportMode = transit.line.vehicle.type === 'HEAVY_RAIL' ? '鉄道' :
+                             transit.line.vehicle.type === 'HIGH_SPEED_TRAIN' ? '新幹線' :
+                             transit.line.vehicle.type === 'BUS' ? 'バス' : '公共交通機関';
+              
+              transportDetails = `${transit.line.name || transit.line.short_name || ''}`;
+              
+              // 出発駅・到着駅
+              const fromStation = transit.departure_stop.name;
+              const toStation = transit.arrival_stop.name;
+              
+              return {
+                mode: transportMode,
+                details: transportDetails,
+                from: fromStation,
+                to: toStation,
+                duration: step.duration.text,
+                durationValue: step.duration.value
+              };
+            }
+          }
+          
+          return {
+            mode: transportMode,
+            details: '',
+            duration: step.duration.text,
+            durationValue: step.duration.value
+          };
+        }).filter(step => step.mode !== '徒歩' || step.durationValue > 300); // 5分以上の徒歩のみ含める
+        
+        return {
+          duration: leg.duration.text,
+          durationValue: leg.duration.value,
+          distance: leg.distance.text,
+          steps: steps
+        };
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('Route info error:', error);
+      return null;
+    }
+  };
+
       const data = await response.json();
       console.log('Search results:', data);
       
@@ -310,15 +385,8 @@ ${groupDetails.length > 0 ? `- 特記事項: ${groupDetails.join('、')}` : ''}
    ${travelGroup.hasChildren ? '- 子供がいる場合は夕食を17:30頃に早める' : ''}
    - 各食事の間隔は必ず4時間以上空ける
 
-2. 公共交通機関を使用する場合は、実在する具体的な列車名・便名を記載してください。
-   例: 東海道新幹線のぞみ123号、ANA456便、特急サンダーバード7号
-   
-   【参考: 主要路線】
-   - 東海道新幹線（東京-京都）: のぞみ、ひかり、こだま（6-21時台、30分間隔）
-   - 山陽新幹線（新大阪-広島-博多）: のぞみ、さくら、みずほ
-   - 北陸新幹線（東京-金沢）: かがやき、はくたか
-   - 特急サンダーバード（大阪-金沢）
-   - 特急はるか（京都-関空）
+2. 公共交通機関については、実際の経路情報を別途取得するため、ここでは移動時間の見積もりのみ記載してください。
+   列車名や便名は記載不要です。
 
 3. 移動時間を現実的に見積もる（渋滞・乗り換え時間を考慮）
 
@@ -417,6 +485,78 @@ JSON形式で返してください:
     setLoadingMessage('レストランとホテルを検索中...');
 
     const enhancedSchedule = { ...parsed.detailedSchedule };
+    console.log('Fetching route information...');
+      const routeInfo = await getRouteInfo(detailInfo.departurePlace, destination, detailInfo.departureTime);
+      
+      if (routeInfo && routeInfo.steps.length > 0) {
+        console.log('Route info obtained:', routeInfo);
+        
+        // 最初の日の移動アクティビティを実際の経路に置き換え
+        if (enhancedSchedule.days && enhancedSchedule.days.length > 0) {
+          const firstDay = enhancedSchedule.days[0];
+          const travelActivityIndex = firstDay.activities.findIndex(a => a.type === 'travel');
+          
+          if (travelActivityIndex !== -1) {
+            // 実際の経路ステップを追加
+            const newActivities = [...firstDay.activities];
+            
+            // 元の移動アクティビティを削除
+            newActivities.splice(travelActivityIndex, 1);
+            
+            // 実際の経路ステップを挿入
+            let currentTime = detailInfo.departureTime;
+            routeInfo.steps.forEach((step, idx) => {
+              const [hours, minutes] = currentTime.split(':').map(Number);
+              const startMinutes = hours * 60 + minutes;
+              
+              const stepActivity = {
+                time: currentTime,
+                type: 'travel',
+                title: step.mode,
+                description: step.details ? 
+                  `${step.details}（${step.from} → ${step.to}）` : 
+                  `${step.from || detailInfo.departurePlace} → ${step.to || destination}`,
+                duration: step.duration,
+                transportation: step.details || step.mode
+              };
+              
+              newActivities.splice(travelActivityIndex + idx, 0, stepActivity);
+              
+              // 次のステップの開始時刻を計算
+              const endMinutes = startMinutes + Math.ceil(step.durationValue / 60);
+              const endHours = Math.floor(endMinutes / 60);
+              const endMins = endMinutes % 60;
+              currentTime = `${String(endHours).padStart(2, '0')}:${String(endMins).padStart(2, '0')}`;
+            });
+            
+            // 到着後のアクティビティの時刻を調整
+            const [lastHours, lastMinutes] = currentTime.split(':').map(Number);
+            let adjustedMinutes = lastHours * 60 + lastMinutes;
+            
+            for (let i = travelActivityIndex + routeInfo.steps.length; i < newActivities.length; i++) {
+              const [actHours, actMinutes] = newActivities[i].time.split(':').map(Number);
+              const actTotalMinutes = actHours * 60 + actMinutes;
+              
+              if (actTotalMinutes < adjustedMinutes) {
+                // 時刻を調整
+                const newHours = Math.floor(adjustedMinutes / 60);
+                const newMins = adjustedMinutes % 60;
+                newActivities[i].time = `${String(newHours).padStart(2, '0')}:${String(newMins).padStart(2, '0')}`;
+              }
+              
+              // 次のアクティビティのために時刻を更新
+              const durationMatch = newActivities[i].duration?.match(/(\d+)/);
+              if (durationMatch) {
+                adjustedMinutes += parseInt(durationMatch[1]);
+              }
+            }
+            
+            firstDay.activities = newActivities;
+          }
+        }
+      } else {
+        console.log('No route info available, using AI-generated schedule');
+      }
     
     for (const day of enhancedSchedule.days) {
       for (const activity of day.activities) {
