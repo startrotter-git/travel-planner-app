@@ -1625,7 +1625,7 @@ if (step === 'questions') {
                           {style.iconComponent}
                         </div>
 
-                        {/* カード */}
+                        {/* カード */} 
                         <div className={`${style.cardBg} ${style.cardShadow} rounded-xl border ${style.cardBorder} overflow-hidden transition-all hover:-translate-y-1`}>
                           {/* 画像（観光アクティビティのみ） */}
                           {activity.type === 'activity' && (
